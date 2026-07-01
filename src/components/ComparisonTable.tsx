@@ -1,7 +1,8 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import type { Car, ProConItem, ScoringConfig } from '../types'
 import { BODY_STYLE_LABELS, DEFAULT_SCORING, FUEL_TYPE_LABELS } from '../types'
 import { carTitle, formatPrice, priceValue } from '../lib/format'
+import Modal from './Modal'
 import {
   blendScores,
   metricScore,
@@ -129,6 +130,8 @@ export default function ComparisonTable({
   const specScores = useMemo(() => specsScores(cars, config), [cars, config])
   const hasSpecScore = specScores.some((s) => s != null)
 
+  const [notesCar, setNotesCar] = useState<Car | null>(null)
+
   // Final Score = factual specs blended with normalized (subjective) pro/con.
   const finalScores = useMemo(() => {
     const proCon100 = cars.map((_, i) =>
@@ -152,9 +155,18 @@ export default function ComparisonTable({
               {cars.map((car) => (
                 <th
                   key={car.id}
-                  className="min-w-40 border-b border-l border-slate-200 bg-slate-100 px-4 py-3 text-left font-semibold text-slate-900"
+                  className="min-w-40 border-b border-l border-slate-200 bg-slate-100 px-4 py-3 text-left align-top font-semibold text-slate-900"
                 >
                   {carTitle(car)}
+                  {car.notes?.trim() && (
+                    <button
+                      type="button"
+                      onClick={() => setNotesCar(car)}
+                      className="mt-1 block text-xs font-normal text-slate-500 underline hover:text-slate-800"
+                    >
+                      📝 Notes
+                    </button>
+                  )}
                 </th>
               ))}
             </tr>
@@ -275,6 +287,18 @@ export default function ComparisonTable({
       </div>
 
       <Legend />
+
+      {notesCar && (
+        <Modal
+          title={`${carTitle(notesCar)} — Notes`}
+          onClose={() => setNotesCar(null)}
+          widthClass="max-w-lg"
+        >
+          <p className="whitespace-pre-wrap text-sm text-slate-700">
+            {notesCar.notes}
+          </p>
+        </Modal>
+      )}
     </div>
   )
 }

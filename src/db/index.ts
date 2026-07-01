@@ -103,7 +103,7 @@ export async function createComparison(
 
 export async function updateComparison(
   id: string,
-  changes: Partial<Pick<Comparison, 'name' | 'carIds'>>,
+  changes: Partial<Pick<Comparison, 'name' | 'carIds' | 'scoring'>>,
 ): Promise<void> {
   await db.comparisons.update(id, { ...changes, updatedAt: now() })
 }

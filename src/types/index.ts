@@ -62,10 +62,27 @@ export interface ProConItem {
   updatedAt: string
 }
 
+// Per-comparison "meaningful difference" thresholds. A gap of one meaningful
+// difference is treated as one step behind the best when coloring and scoring.
+export interface ScoringConfig {
+  pricePct: number // meaningful price gap as % of the cheapest car
+  mpgDiff: number // meaningful MPG gap
+  mpgeDiff: number // meaningful MPGe gap
+  cargoDiff: number // meaningful cargo gap (cu ft)
+}
+
+export const DEFAULT_SCORING: ScoringConfig = {
+  pricePct: 20,
+  mpgDiff: 7,
+  mpgeDiff: 15,
+  cargoDiff: 5,
+}
+
 export interface Comparison {
   id: string
   name: string
   carIds: string[] // ordered columns in the table
+  scoring?: ScoringConfig // falls back to DEFAULT_SCORING when absent
   createdAt: string
   updatedAt: string
 }

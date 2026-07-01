@@ -1,96 +1,124 @@
 import { describe, expect, it } from 'vitest'
-import { effectiveMpg, rankColor } from './ranking'
-import type { Car } from '../types'
+import {
+  metricScore,
+  priceMeaningfulDiff,
+  proximityTier,
+  specsScores,
+  stepsBehindBest,
+} from './ranking'
+import { DEFAULT_SCORING, type Car } from '../types'
 
-describe('rankColor', () => {
-  it('returns neutral when fewer than 2 values are present', () => {
-    expect(rankColor([5, null, null], 0, 'higher')).toBe('neutral')
-    expect(rankColor([null, null], 0, 'lower')).toBe('neutral')
+// MPG example from the design discussion: Prius 57, Civic 50, RAV4 40, CR-V 28.
+const MPG = [57, 50, 40, 28]
+const D = 7 // meaningful MPG difference
+
+describe('stepsBehindBest', () => {
+  it('returns null when not comparative or value missing', () => {
+    expect(stepsBehindBest([50, null, null], 0, 'higher', D)).toBeNull()
+    expect(stepsBehindBest([50, 50], 0, 'higher', D)).toBeNull() // no variance
+    expect(stepsBehindBest([50, null, 40], 1, 'higher', D)).toBeNull()
   })
 
-  it('returns neutral when the value at index is missing', () => {
-    expect(rankColor([10, null, 20], 1, 'higher')).toBe('neutral')
+  it('measures gap from best in meaningful-difference units', () => {
+    expect(stepsBehindBest(MPG, 0, 'higher', D)).toBe(0) // Prius, best
+    expect(stepsBehindBest(MPG, 1, 'higher', D)).toBeCloseTo(1) // Civic, ~1 step
+    expect(stepsBehindBest(MPG, 3, 'higher', D)).toBeCloseTo(29 / 7) // CR-V
   })
 
-  it('returns neutral when all present values are equal', () => {
-    expect(rankColor([7, 7, 7], 0, 'higher')).toBe('neutral')
-    expect(rankColor([7, 7, 7], 1, 'lower')).toBe('neutral')
-  })
-
-  it('ranks lower-is-better correctly', () => {
-    const values = [100, 200, 300]
-    expect(rankColor(values, 0, 'lower')).toBe('best')
-    expect(rankColor(values, 1, 'lower')).toBe('mid')
-    expect(rankColor(values, 2, 'lower')).toBe('worst')
-  })
-
-  it('ranks higher-is-better correctly', () => {
-    const values = [100, 200, 300]
-    expect(rankColor(values, 0, 'higher')).toBe('worst')
-    expect(rankColor(values, 1, 'higher')).toBe('mid')
-    expect(rankColor(values, 2, 'higher')).toBe('best')
-  })
-
-  it('gives all tied best values the best color', () => {
-    const values = [40, 40, 32]
-    expect(rankColor(values, 0, 'higher')).toBe('best')
-    expect(rankColor(values, 1, 'higher')).toBe('best')
-    expect(rankColor(values, 2, 'higher')).toBe('worst')
-  })
-
-  it('gives all tied worst values the worst color', () => {
-    const values = [50, 50, 90]
-    expect(rankColor(values, 0, 'higher')).toBe('worst')
-    expect(rankColor(values, 1, 'higher')).toBe('worst')
-    expect(rankColor(values, 2, 'higher')).toBe('best')
-  })
-
-  it('ignores missing values when computing extremes', () => {
-    const values = [null, 20, 10, null]
-    expect(rankColor(values, 1, 'higher')).toBe('best')
-    expect(rankColor(values, 2, 'higher')).toBe('worst')
-    expect(rankColor(values, 0, 'higher')).toBe('neutral')
+  it('measures from the min for lower-is-better', () => {
+    expect(stepsBehindBest([100, 130], 1, 'lower', 30)).toBeCloseTo(1)
   })
 })
 
-describe('effectiveMpg', () => {
+describe('proximityTier', () => {
+  it('keeps a near-best value out of the "bad" tiers', () => {
+    // The Civic (50) is only ~1 step behind → good, not amber/mid.
+    expect(proximityTier(MPG, 1, 'higher', D)).toBe('good')
+  })
+
+  it('grades the full spread of the MPG example', () => {
+    expect(proximityTier(MPG, 0, 'higher', D)).toBe('best') // 57
+    expect(proximityTier(MPG, 1, 'higher', D)).toBe('good') // 50
+    expect(proximityTier(MPG, 2, 'higher', D)).toBe('fair') // 40 (~2.4 steps)
+    expect(proximityTier(MPG, 3, 'higher', D)).toBe('worst') // 28 (~4.1 steps)
+  })
+
+  it('returns neutral for missing / non-comparative values', () => {
+    expect(proximityTier([50, null], 1, 'higher', D)).toBe('neutral')
+    expect(proximityTier([50, 50], 0, 'higher', D)).toBe('neutral')
+  })
+
+  it('treats values within half a meaningful difference as best (ties)', () => {
+    expect(proximityTier([57, 54], 1, 'higher', D)).toBe('best') // 3 mpg < 3.5
+  })
+})
+
+describe('metricScore', () => {
+  it('scores 100 at the best and drops 20 points per meaningful step', () => {
+    expect(metricScore(MPG, 0, 'higher', D)).toBe(100) // best
+    expect(metricScore(MPG, 1, 'higher', D)).toBeCloseTo(80) // ~1 step
+  })
+
+  it('floors at 0 for values far behind', () => {
+    expect(metricScore([100, 0], 1, 'higher', 10)).toBe(0) // 10 steps behind
+  })
+
+  it('returns null when not comparable', () => {
+    expect(metricScore([50, null], 1, 'higher', D)).toBeNull()
+  })
+})
+
+describe('priceMeaningfulDiff', () => {
+  it('is a percentage of the cheapest car', () => {
+    const cars = [
+      { price: { mode: 'static', amount: 30000 } },
+      { price: { mode: 'static', amount: 40000 } },
+    ] as Car[]
+    expect(priceMeaningfulDiff(cars, { ...DEFAULT_SCORING, pricePct: 20 })).toBe(
+      6000,
+    )
+  })
+})
+
+describe('specsScores', () => {
   const base = {
-    id: 'x',
     year: 2024,
     make: 'M',
-    model: 'X',
-    price: { mode: 'static', amount: 1 },
     bodyStyle: 'sedan',
+    fuelType: 'gas',
     createdAt: '',
     updatedAt: '',
   } as const
 
-  it('uses mpg for gas cars even if mpge is present', () => {
-    const car = {
-      ...base,
-      fuelType: 'gas',
-      mpg: { combined: 30 },
-      mpge: { combined: 99 },
-    } as Car
-    expect(effectiveMpg(car)?.combined).toBe(30)
+  it('averages comparative categories and rewards near-best cars', () => {
+    const cars: Car[] = [
+      { ...base, id: 'a', model: 'A', price: { mode: 'static', amount: 30000 }, mpg: { combined: 57 } },
+      { ...base, id: 'b', model: 'B', price: { mode: 'static', amount: 30000 }, mpg: { combined: 50 } },
+    ]
+    const [a, b] = specsScores(cars, DEFAULT_SCORING)
+    // Price is equal (non-comparative → excluded); only MPG counts.
+    // A is best (100); B is ~1 step behind (~80).
+    expect(a).toBe(100)
+    expect(b).toBe(80)
   })
 
-  it('prefers mpge for electric/hybrid when present', () => {
-    const car = {
-      ...base,
-      fuelType: 'electric',
-      mpg: { combined: 30 },
-      mpge: { combined: 120 },
-    } as Car
-    expect(effectiveMpg(car)?.combined).toBe(120)
+  it('does not penalize a car for a category it has no data in', () => {
+    const cars: Car[] = [
+      { ...base, id: 'a', model: 'A', price: { mode: 'static', amount: 20000 }, mpg: { combined: 40 } },
+      { ...base, id: 'b', model: 'B', price: { mode: 'static', amount: 30000 } }, // no mpg
+    ]
+    const scores = specsScores(cars, DEFAULT_SCORING)
+    // Both scored on price (a best). b only has price, so its score reflects
+    // price alone rather than a 0 for missing MPG.
+    expect(scores[0]).toBe(100)
+    expect(scores[1]).toBeGreaterThan(0)
   })
 
-  it('falls back to mpg for hybrid when mpge is absent', () => {
-    const car = {
-      ...base,
-      fuelType: 'hybrid',
-      mpg: { combined: 45 },
-    } as Car
-    expect(effectiveMpg(car)?.combined).toBe(45)
+  it('returns null when nothing is comparable', () => {
+    const cars: Car[] = [
+      { ...base, id: 'a', model: 'A', price: { mode: 'static', amount: 20000 } },
+      { ...base, id: 'b', model: 'B', price: { mode: 'static', amount: 20000 } },
+    ]
+    expect(specsScores(cars, DEFAULT_SCORING)).toEqual([null, null])
   })
 })

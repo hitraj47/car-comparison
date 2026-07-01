@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import type { Car, ProConItem, ScoringConfig } from '../types'
 import { BODY_STYLE_LABELS, DEFAULT_SCORING, FUEL_TYPE_LABELS } from '../types'
 import { carTitle, formatPrice, priceValue } from '../lib/format'
+import { updateCar } from '../db'
 import Modal from './Modal'
 import {
   blendScores,
@@ -158,15 +159,13 @@ export default function ComparisonTable({
                   className="min-w-40 border-b border-l border-slate-200 bg-slate-100 px-4 py-3 text-left align-top font-semibold text-slate-900"
                 >
                   {carTitle(car)}
-                  {car.notes?.trim() && (
-                    <button
-                      type="button"
-                      onClick={() => setNotesCar(car)}
-                      className="mt-1 block text-xs font-normal text-slate-500 underline hover:text-slate-800"
-                    >
-                      📝 Notes
-                    </button>
-                  )}
+                  <button
+                    type="button"
+                    onClick={() => setNotesCar(car)}
+                    className="mt-1 block text-xs font-normal text-slate-500 underline hover:text-slate-800"
+                  >
+                    {car.notes?.trim() ? '📝 Notes' : '＋ Add note'}
+                  </button>
                 </th>
               ))}
             </tr>
@@ -289,17 +288,56 @@ export default function ComparisonTable({
       <Legend />
 
       {notesCar && (
-        <Modal
-          title={`${carTitle(notesCar)} — Notes`}
-          onClose={() => setNotesCar(null)}
-          widthClass="max-w-lg"
-        >
-          <p className="whitespace-pre-wrap text-sm text-slate-700">
-            {notesCar.notes}
-          </p>
-        </Modal>
+        <NotesModal car={notesCar} onClose={() => setNotesCar(null)} />
       )}
     </div>
+  )
+}
+
+function NotesModal({ car, onClose }: { car: Car; onClose: () => void }) {
+  const [draft, setDraft] = useState(car.notes ?? '')
+  const [saving, setSaving] = useState(false)
+
+  async function save() {
+    setSaving(true)
+    await updateCar(car.id, { notes: draft.trim() || undefined })
+    onClose()
+  }
+
+  return (
+    <Modal
+      title={`${carTitle(car)} — Notes`}
+      onClose={onClose}
+      widthClass="max-w-lg"
+      footer={
+        <>
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-md px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={save}
+            disabled={saving}
+            className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700 disabled:opacity-50"
+          >
+            {saving ? 'Saving…' : 'Save'}
+          </button>
+        </>
+      }
+    >
+      <textarea
+        autoFocus
+        value={draft}
+        onChange={(e) => setDraft(e.target.value)}
+        rows={6}
+        placeholder="Add notes about this car…"
+        className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none"
+      />
+    </Modal>
   )
 }
 

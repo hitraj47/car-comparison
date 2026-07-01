@@ -14,7 +14,9 @@
       "Bash(ls -la scaffold-tmp)",
       "Bash(rm -rf scaffold-tmp)",
       "Bash(npm install *)",
-      "Bash(npm run *)"
+      "Bash(npm run *)",
+      "Bash(npx tsc *)",
+      "Bash(echo \"exit: $?\")"
     ]
   }
 }

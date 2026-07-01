@@ -9,7 +9,12 @@
       "Bash(git config *)",
       "Bash(echo \"user: $\\(git config user.name\\) <$\\(git config user.email\\)>\")",
       "Bash(git add *)",
-      "Bash(git commit -q -m ' *)"
+      "Bash(git commit -q -m ' *)",
+      "Bash(npm create *)",
+      "Bash(ls -la scaffold-tmp)",
+      "Bash(rm -rf scaffold-tmp)",
+      "Bash(npm install *)",
+      "Bash(npm run *)"
     ]
   }
 }

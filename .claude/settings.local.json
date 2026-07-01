@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(echo \"=== exit: $? ===\")",
+      "Bash(npm --version)",
+      "Bash(git --version)",
+      "Bash(git init *)",
+      "Bash(git symbolic-ref *)",
+      "Bash(git config *)",
+      "Bash(echo \"user: $\\(git config user.name\\) <$\\(git config user.email\\)>\")",
+      "Bash(git add *)",
+      "Bash(git commit -q -m ' *)"
+    ]
+  }
+}

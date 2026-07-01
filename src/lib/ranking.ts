@@ -162,3 +162,29 @@ export function specsScores(
     return Math.round(mean(categories))
   })
 }
+
+/**
+ * Final Score: blend the factual Specs Score with the subjective (normalized)
+ * Pro/Con Score, weighting pros/cons by `proConWeightPct` and specs by the
+ * remainder. If only one side is available, it stands alone (weights
+ * renormalize), so a car with no pros/cons falls back to its Specs Score.
+ * Returns null when neither side is comparable.
+ */
+export function blendScores(
+  specs: number | null,
+  proCon: number | null,
+  proConWeightPct: number,
+): number | null {
+  const proConW = Math.max(0, Math.min(100, proConWeightPct))
+  const parts: { score: number; weight: number }[] = []
+  if (specs != null) parts.push({ score: specs, weight: 100 - proConW })
+  if (proCon != null) parts.push({ score: proCon, weight: proConW })
+  if (parts.length === 0) return null
+
+  const totalW = parts.reduce((a, p) => a + p.weight, 0)
+  // If the only available side has zero weight, fall back to a plain average.
+  if (totalW === 0) {
+    return Math.round(parts.reduce((a, p) => a + p.score, 0) / parts.length)
+  }
+  return Math.round(parts.reduce((a, p) => a + p.score * p.weight, 0) / totalW)
+}

@@ -3,6 +3,8 @@ import type { Car, ProConItem, ScoringConfig } from '../types'
 import { BODY_STYLE_LABELS, DEFAULT_SCORING, FUEL_TYPE_LABELS } from '../types'
 import { carTitle, formatPrice, priceValue } from '../lib/format'
 import {
+  blendScores,
+  metricScore,
   priceMeaningfulDiff,
   proximityCellClass,
   proximityTier,
@@ -127,6 +129,17 @@ export default function ComparisonTable({
   const specScores = useMemo(() => specsScores(cars, config), [cars, config])
   const hasSpecScore = specScores.some((s) => s != null)
 
+  // Final Score = factual specs blended with normalized (subjective) pro/con.
+  const finalScores = useMemo(() => {
+    const proCon100 = cars.map((_, i) =>
+      metricScore(proConScores, i, 'higher', PROCON_SCORE_DIFF),
+    )
+    return cars.map((_, i) =>
+      blendScores(specScores[i], proCon100[i], config.proConWeight),
+    )
+  }, [cars, proConScores, specScores, config.proConWeight])
+  const showFinalScore = proConItemIds.length > 0 && hasSpecScore
+
   return (
     <div>
       <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white">
@@ -245,6 +258,18 @@ export default function ComparisonTable({
                 meaningfulDiff={PROCON_SCORE_DIFF}
               />
             )}
+
+            {/* Final Score: specs + pros/cons blended */}
+            {showFinalScore && (
+              <ScoreRow
+                label="Final Score"
+                sublabel={`${100 - config.proConWeight}% specs · ${config.proConWeight}% pros/cons`}
+                cars={cars}
+                scores={finalScores}
+                meaningfulDiff={SPECS_SCORE_DIFF}
+                emphasis
+              />
+            )}
           </tbody>
         </table>
       </div>
@@ -307,22 +332,35 @@ function ScoreRow({
   cars,
   scores,
   meaningfulDiff,
+  emphasis = false,
 }: {
   label: string
   sublabel?: string
   cars: Car[]
   scores: (number | null)[]
   meaningfulDiff: number
+  emphasis?: boolean
 }) {
+  const topBorder = emphasis ? 'border-t-2 border-t-slate-300' : ''
+  const size = emphasis ? 'text-base' : ''
   return (
     <tr>
-      <RowHeader label={label} sublabel={sublabel} />
+      <th
+        className={`sticky left-0 z-10 border-b border-slate-100 bg-white px-4 py-2 text-left font-semibold text-slate-900 ${topBorder}`}
+      >
+        {label}
+        {sublabel && (
+          <span className="block text-xs font-normal text-slate-400">
+            {sublabel}
+          </span>
+        )}
+      </th>
       {cars.map((car, i) => {
         const tier = proximityTier(scores, i, 'higher', meaningfulDiff)
         return (
           <td
             key={car.id}
-            className={`border-b border-l border-slate-100 px-4 py-2 font-semibold ${proximityCellClass(tier)}`}
+            className={`border-b border-l border-slate-100 px-4 py-2 font-semibold ${size} ${topBorder} ${proximityCellClass(tier)}`}
           >
             {scores[i] ?? dash}
           </td>

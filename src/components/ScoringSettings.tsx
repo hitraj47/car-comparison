@@ -75,6 +75,26 @@ export default function ScoringSettings({
         onChange={(v) => set('cargoFoldedDiff', v)}
       />
 
+      <div className="border-t border-slate-200 pt-4">
+        <h4 className="mb-1 text-sm font-semibold text-slate-700">
+          Final Score blend
+        </h4>
+        <p className="mb-3 text-sm text-slate-500">
+          How much the subjective pros &amp; cons count toward the Final Score.
+          Specs make up the rest.
+        </p>
+        <Slider
+          label="Pros & cons"
+          min={0}
+          max={100}
+          step={5}
+          value={config.proConWeight}
+          suffix="%"
+          hint={`specs ${100 - config.proConWeight}%`}
+          onChange={(v) => set('proConWeight', v)}
+        />
+      </div>
+
       <button
         type="button"
         onClick={() => onChange({ ...DEFAULT_SCORING })}

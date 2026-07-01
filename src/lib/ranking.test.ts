@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  blendScores,
   metricScore,
   priceMeaningfulDiff,
   proximityTier,
@@ -137,5 +138,25 @@ describe('specsScores', () => {
     // Price is equal → excluded; cargo is the only category.
     expect(specsScores(foldedOnly, DEFAULT_SCORING)[1]).toBe(80)
     expect(specsScores(upOnly, DEFAULT_SCORING)[1]).toBeLessThan(80)
+  })
+})
+
+describe('blendScores', () => {
+  it('weights specs and pros/cons by the given percentage', () => {
+    expect(blendScores(80, 40, 50)).toBe(60) // equal blend
+    expect(blendScores(80, 40, 25)).toBe(70) // 75% specs, 25% pros/cons
+    expect(blendScores(80, 40, 0)).toBe(80) // specs only
+    expect(blendScores(80, 40, 100)).toBe(40) // pros/cons only
+  })
+
+  it('falls back to whichever side is present', () => {
+    expect(blendScores(80, null, 50)).toBe(80) // no pro/con → specs alone
+    expect(blendScores(null, 40, 50)).toBe(40) // no specs → pro/con alone
+    expect(blendScores(null, null, 50)).toBeNull()
+  })
+
+  it('ignores a missing side even at an extreme weight', () => {
+    // 100% pros/cons but none present → specs still stands alone.
+    expect(blendScores(80, null, 100)).toBe(80)
   })
 })

@@ -70,6 +70,7 @@ export interface ScoringConfig {
   mpgeDiff: number // meaningful MPGe gap
   cargoUpDiff: number // meaningful cargo gap, seats up (cu ft)
   cargoFoldedDiff: number // meaningful cargo gap, seats folded (cu ft)
+  proConWeight: number // % weight of pros/cons in the Final Score (specs = rest)
 }
 
 export const DEFAULT_SCORING: ScoringConfig = {
@@ -78,6 +79,7 @@ export const DEFAULT_SCORING: ScoringConfig = {
   mpgeDiff: 15,
   cargoUpDiff: 8,
   cargoFoldedDiff: 15,
+  proConWeight: 50,
 }
 
 export interface Comparison {

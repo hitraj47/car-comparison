@@ -1,32 +1,48 @@
-# React + TypeScript + Vite
+# Car Comparison
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+A desktop-first web app for comparing cars side by side. All data is stored
+locally in your browser (IndexedDB) — no server, no accounts — with JSON
+export/import for backup and sharing.
 
-Currently, two official plugins are available:
+## v1 features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- **Cars library** — add/edit/delete cars with year/make/model, body style,
+  fuel type, price (single or range), MPG/MPGe (city/highway/combined), and
+  cargo volume (seats up / folded).
+- **Reusable pros & cons** — type a pro/con to create a reusable catalog item
+  with a global weight (1–10); reuse it across cars as a pro or a con.
+- **Comparisons** — group 2+ cars into a named comparison and reorder columns.
+- **Color-coded table** — numeric rows are ranked (green best / red worst /
+  amber mid / gray neutral), plus per-item pro/con rows and a weighted
+  `Σ(pro) − Σ(con)` score.
+- **Import / export** — download a JSON backup or merge one back in by id.
 
-## React Compiler
+Photos (Phase 2) and an AI comparison summary (Phase 3) are planned — see
+[`plan.md`](plan.md).
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Tech stack
 
-## Expanding the Oxlint configuration
+Vite · React 19 · TypeScript · React Router · Dexie (IndexedDB) · Tailwind CSS
+v4 · Vitest.
 
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
+## Scripts
 
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+```bash
+npm run dev        # start the dev server
+npm run build      # type-check and build for production
+npm run preview    # preview the production build
+npm test           # run unit tests (ranking + pro/con scoring)
+npm run lint       # oxlint
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+## Project layout
+
+```
+src/
+  components/   Layout, Modal, CarForm, ProConEditor, CarPicker,
+                NameDialog, ComparisonTable
+  db/           Dexie schema + CRUD helpers
+  lib/          ranking, proConScoring, format, importExport (+ tests)
+  pages/        Comparisons, Cars, ComparisonDetail, Settings
+  types/        domain types
+```

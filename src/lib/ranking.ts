@@ -104,7 +104,6 @@ function avgDefined(...vals: (number | undefined)[]): number | undefined {
 const mpgHeadline = (c: Car) => c.mpg?.combined ?? avgDefined(c.mpg?.city, c.mpg?.highway)
 const mpgeHeadline = (c: Car) =>
   c.mpge?.combined ?? avgDefined(c.mpge?.city, c.mpge?.highway)
-const cargoHeadline = (c: Car) => c.cargo?.seatsUpCuFt ?? c.cargo?.seatsFoldedCuFt
 
 /** Meaningful price gap in dollars: `pricePct`% of the cheapest car. */
 export function priceMeaningfulDiff(
@@ -118,43 +117,48 @@ export function priceMeaningfulDiff(
 
 /**
  * Equal-weighted 0–100 Specs Score per car, averaging price, MPG, MPGe, and
- * cargo. Each car is scored only on the comparative categories it has a value
- * for — missing data never penalizes. Returns null when nothing is comparable.
+ * cargo. Seats-up and seats-folded cargo use separate meaningful differences
+ * but are averaged into a single cargo category so cargo isn't double-weighted.
+ * Each car is scored only on the comparative categories it has a value for —
+ * missing data never penalizes. Returns null when nothing is comparable.
  */
 export function specsScores(
   cars: Car[],
   config: ScoringConfig,
 ): (number | null)[] {
-  const categories: { values: (number | null)[]; direction: Direction; diff: number }[] = [
-    {
-      values: cars.map((c) => priceValue(c.price)),
-      direction: 'lower',
-      diff: priceMeaningfulDiff(cars, config),
-    },
-    {
-      values: cars.map((c) => mpgHeadline(c) ?? null),
-      direction: 'higher',
-      diff: config.mpgDiff,
-    },
-    {
-      values: cars.map((c) => mpgeHeadline(c) ?? null),
-      direction: 'higher',
-      diff: config.mpgeDiff,
-    },
-    {
-      values: cars.map((c) => cargoHeadline(c) ?? null),
-      direction: 'higher',
-      diff: config.cargoDiff,
-    },
-  ]
+  const priceValues = cars.map((c) => priceValue(c.price))
+  const mpgValues = cars.map((c) => mpgHeadline(c) ?? null)
+  const mpgeValues = cars.map((c) => mpgeHeadline(c) ?? null)
+  const cargoUpValues = cars.map((c) => c.cargo?.seatsUpCuFt ?? null)
+  const cargoFoldedValues = cars.map((c) => c.cargo?.seatsFoldedCuFt ?? null)
+  const priceDiff = priceMeaningfulDiff(cars, config)
+
+  const mean = (xs: number[]) => xs.reduce((a, b) => a + b, 0) / xs.length
 
   return cars.map((_, i) => {
-    const scores: number[] = []
-    for (const cat of categories) {
-      const s = metricScore(cat.values, i, cat.direction, cat.diff)
-      if (s != null) scores.push(s)
+    const categories: number[] = []
+    const add = (s: number | null) => {
+      if (s != null) categories.push(s)
     }
-    if (scores.length === 0) return null
-    return Math.round(scores.reduce((a, b) => a + b, 0) / scores.length)
+
+    add(metricScore(priceValues, i, 'lower', priceDiff))
+    add(metricScore(mpgValues, i, 'higher', config.mpgDiff))
+    add(metricScore(mpgeValues, i, 'higher', config.mpgeDiff))
+
+    // Cargo: one category, averaged from the up/folded sub-scores present.
+    const cargoSubs: number[] = []
+    const up = metricScore(cargoUpValues, i, 'higher', config.cargoUpDiff)
+    const folded = metricScore(
+      cargoFoldedValues,
+      i,
+      'higher',
+      config.cargoFoldedDiff,
+    )
+    if (up != null) cargoSubs.push(up)
+    if (folded != null) cargoSubs.push(folded)
+    if (cargoSubs.length > 0) categories.push(mean(cargoSubs))
+
+    if (categories.length === 0) return null
+    return Math.round(mean(categories))
   })
 }

@@ -41,7 +41,8 @@ export default function ComparisonDetailPage() {
   const cars = data.cars ?? []
   const catalog = data.catalog ?? []
   const carCount = comparison.carIds.length
-  const config = comparison.scoring ?? DEFAULT_SCORING
+  // Merge over defaults so older saved configs fill any new fields.
+  const config = { ...DEFAULT_SCORING, ...comparison.scoring }
 
   return (
     <div>

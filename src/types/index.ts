@@ -68,14 +68,16 @@ export interface ScoringConfig {
   pricePct: number // meaningful price gap as % of the cheapest car
   mpgDiff: number // meaningful MPG gap
   mpgeDiff: number // meaningful MPGe gap
-  cargoDiff: number // meaningful cargo gap (cu ft)
+  cargoUpDiff: number // meaningful cargo gap, seats up (cu ft)
+  cargoFoldedDiff: number // meaningful cargo gap, seats folded (cu ft)
 }
 
 export const DEFAULT_SCORING: ScoringConfig = {
   pricePct: 20,
   mpgDiff: 7,
   mpgeDiff: 15,
-  cargoDiff: 5,
+  cargoUpDiff: 8,
+  cargoFoldedDiff: 15,
 }
 
 export interface Comparison {

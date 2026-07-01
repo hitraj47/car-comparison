@@ -97,7 +97,7 @@ export default function ComparisonTable({
       rows.push({
         label: 'Cargo — seats up (cu ft)',
         direction: 'higher',
-        meaningfulDiff: config.cargoDiff,
+        meaningfulDiff: config.cargoUpDiff,
         value: (c) => c.cargo?.seatsUpCuFt,
         display: (c) => numOrDash(c.cargo?.seatsUpCuFt),
       })
@@ -106,7 +106,7 @@ export default function ComparisonTable({
       rows.push({
         label: 'Cargo — seats folded (cu ft)',
         direction: 'higher',
-        meaningfulDiff: config.cargoDiff,
+        meaningfulDiff: config.cargoFoldedDiff,
         value: (c) => c.cargo?.seatsFoldedCuFt,
         display: (c) => numOrDash(c.cargo?.seatsFoldedCuFt),
       })

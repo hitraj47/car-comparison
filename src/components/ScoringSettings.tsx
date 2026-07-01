@@ -57,13 +57,22 @@ export default function ScoringSettings({
         onChange={(v) => set('mpgeDiff', v)}
       />
       <Slider
-        label="Cargo"
+        label="Cargo (up)"
         min={1}
         max={20}
         step={0.5}
-        value={config.cargoDiff}
+        value={config.cargoUpDiff}
         suffix=" cu ft"
-        onChange={(v) => set('cargoDiff', v)}
+        onChange={(v) => set('cargoUpDiff', v)}
+      />
+      <Slider
+        label="Cargo (folded)"
+        min={1}
+        max={40}
+        step={0.5}
+        value={config.cargoFoldedDiff}
+        suffix=" cu ft"
+        onChange={(v) => set('cargoFoldedDiff', v)}
       />
 
       <button

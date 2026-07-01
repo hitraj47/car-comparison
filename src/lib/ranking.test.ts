@@ -121,4 +121,21 @@ describe('specsScores', () => {
     ]
     expect(specsScores(cars, DEFAULT_SCORING)).toEqual([null, null])
   })
+
+  it('uses separate cargo thresholds for seats up vs folded', () => {
+    // A 15 cu ft folded gap is one full step (folded diff 15) → 80,
+    // while the same 15 cu ft up gap is ~1.9 steps (up diff 8) → ~62.5.
+    const price = { mode: 'static', amount: 30000 } as const
+    const foldedOnly: Car[] = [
+      { ...base, id: 'a', model: 'A', price, cargo: { seatsFoldedCuFt: 70 } },
+      { ...base, id: 'b', model: 'B', price, cargo: { seatsFoldedCuFt: 55 } },
+    ]
+    const upOnly: Car[] = [
+      { ...base, id: 'a', model: 'A', price, cargo: { seatsUpCuFt: 70 } },
+      { ...base, id: 'b', model: 'B', price, cargo: { seatsUpCuFt: 55 } },
+    ]
+    // Price is equal → excluded; cargo is the only category.
+    expect(specsScores(foldedOnly, DEFAULT_SCORING)[1]).toBe(80)
+    expect(specsScores(upOnly, DEFAULT_SCORING)[1]).toBeLessThan(80)
+  })
 })

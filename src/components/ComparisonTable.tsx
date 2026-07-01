@@ -1,0 +1,258 @@
+import { useMemo } from 'react'
+import type { Car, ProConItem } from '../types'
+import { BODY_STYLE_LABELS, FUEL_TYPE_LABELS } from '../types'
+import { carTitle, formatPrice, priceValue } from '../lib/format'
+import { rankCellClass, rankColor, type Direction } from '../lib/ranking'
+import {
+  polarityCellClass,
+  polarityFor,
+  proConScore,
+  relevantItemIds,
+} from '../lib/proConScoring'
+
+interface ComparisonTableProps {
+  cars: Car[]
+  catalog: ProConItem[]
+}
+
+// A numeric row: extracts one value per car, ranks and colors the cells.
+interface NumericRow {
+  label: string
+  direction: Direction
+  value: (car: Car) => number | null | undefined
+  display: (car: Car) => string
+}
+
+const dash = '—'
+
+export default function ComparisonTable({ cars, catalog }: ComparisonTableProps) {
+  const catalogById = useMemo(() => {
+    const m = new Map<string, ProConItem>()
+    for (const item of catalog) m.set(item.id, item)
+    return m
+  }, [catalog])
+
+  const numericRows = useMemo<NumericRow[]>(() => {
+    const rows: NumericRow[] = [
+      {
+        label: 'Price',
+        direction: 'lower',
+        value: (c) => priceValue(c.price),
+        display: (c) => formatPrice(c.price),
+      },
+    ]
+
+    const mpgFields = [
+      ['MPG — City', 'city'],
+      ['MPG — Highway', 'highway'],
+      ['MPG — Combined', 'combined'],
+    ] as const
+    for (const [label, key] of mpgFields) {
+      if (cars.some((c) => c.mpg?.[key] != null)) {
+        rows.push({
+          label,
+          direction: 'higher',
+          value: (c) => c.mpg?.[key],
+          display: (c) => numOrDash(c.mpg?.[key]),
+        })
+      }
+    }
+
+    const mpgeFields = [
+      ['MPGe — City', 'city'],
+      ['MPGe — Highway', 'highway'],
+      ['MPGe — Combined', 'combined'],
+    ] as const
+    for (const [label, key] of mpgeFields) {
+      if (cars.some((c) => c.mpge?.[key] != null)) {
+        rows.push({
+          label,
+          direction: 'higher',
+          value: (c) => c.mpge?.[key],
+          display: (c) => numOrDash(c.mpge?.[key]),
+        })
+      }
+    }
+
+    if (cars.some((c) => c.cargo?.seatsUpCuFt != null)) {
+      rows.push({
+        label: 'Cargo — seats up (cu ft)',
+        direction: 'higher',
+        value: (c) => c.cargo?.seatsUpCuFt,
+        display: (c) => numOrDash(c.cargo?.seatsUpCuFt),
+      })
+    }
+    if (cars.some((c) => c.cargo?.seatsFoldedCuFt != null)) {
+      rows.push({
+        label: 'Cargo — seats folded (cu ft)',
+        direction: 'higher',
+        value: (c) => c.cargo?.seatsFoldedCuFt,
+        display: (c) => numOrDash(c.cargo?.seatsFoldedCuFt),
+      })
+    }
+    return rows
+  }, [cars])
+
+  const proConItemIds = useMemo(
+    () => relevantItemIds(cars, catalogById),
+    [cars, catalogById],
+  )
+
+  const scores = useMemo(
+    () => cars.map((c) => proConScore(c, catalogById)),
+    [cars, catalogById],
+  )
+
+  return (
+    <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white">
+      <table className="border-collapse text-sm">
+        <thead>
+          <tr>
+            <th className="sticky left-0 z-20 min-w-56 border-b border-slate-200 bg-slate-100 px-4 py-3 text-left font-medium text-slate-500">
+              Attribute
+            </th>
+            {cars.map((car) => (
+              <th
+                key={car.id}
+                className="min-w-40 border-b border-l border-slate-200 bg-slate-100 px-4 py-3 text-left font-semibold text-slate-900"
+              >
+                {carTitle(car)}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {/* Neutral info rows */}
+          <InfoRow
+            label="Body style"
+            cars={cars}
+            render={(c) => BODY_STYLE_LABELS[c.bodyStyle]}
+          />
+          <InfoRow
+            label="Fuel type"
+            cars={cars}
+            render={(c) => FUEL_TYPE_LABELS[c.fuelType]}
+          />
+
+          {/* Numeric colored rows */}
+          {numericRows.map((row) => {
+            const values = cars.map((c) => {
+              const v = row.value(c)
+              return v == null ? null : v
+            })
+            return (
+              <tr key={row.label}>
+                <RowHeader label={row.label} />
+                {cars.map((car, i) => {
+                  const color = rankColor(values, i, row.direction)
+                  return (
+                    <td
+                      key={car.id}
+                      className={`border-b border-l border-slate-100 px-4 py-2 ${rankCellClass(color)}`}
+                    >
+                      {row.display(car)}
+                    </td>
+                  )
+                })}
+              </tr>
+            )
+          })}
+
+          {/* Pro/con item rows */}
+          {proConItemIds.length > 0 && (
+            <tr>
+              <td
+                colSpan={cars.length + 1}
+                className="sticky left-0 border-y border-slate-200 bg-slate-50 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-slate-500"
+              >
+                Pros &amp; Cons
+              </td>
+            </tr>
+          )}
+          {proConItemIds.map((itemId) => {
+            const item = catalogById.get(itemId)!
+            return (
+              <tr key={itemId}>
+                <th className="sticky left-0 z-10 border-b border-slate-100 bg-white px-4 py-2 text-left font-medium text-slate-700">
+                  {item.label}
+                  <span className="ml-2 text-xs text-slate-400">
+                    ★{item.weight}
+                  </span>
+                </th>
+                {cars.map((car) => {
+                  const polarity = polarityFor(car, itemId)
+                  return (
+                    <td
+                      key={car.id}
+                      className={`border-b border-l border-slate-100 px-4 py-2 ${polarityCellClass(polarity)}`}
+                    >
+                      {polarity === 'pro'
+                        ? '✓ Pro'
+                        : polarity === 'con'
+                          ? '✗ Con'
+                          : dash}
+                    </td>
+                  )
+                })}
+              </tr>
+            )
+          })}
+
+          {/* Weighted score row */}
+          {proConItemIds.length > 0 && (
+            <tr>
+              <RowHeader label="Pro/Con Score" />
+              {cars.map((car, i) => {
+                const color = rankColor(scores, i, 'higher')
+                return (
+                  <td
+                    key={car.id}
+                    className={`border-b border-l border-slate-100 px-4 py-2 font-semibold ${rankCellClass(color)}`}
+                  >
+                    {scores[i]}
+                  </td>
+                )
+              })}
+            </tr>
+          )}
+        </tbody>
+      </table>
+    </div>
+  )
+}
+
+function numOrDash(v: number | null | undefined): string {
+  return v == null ? dash : String(v)
+}
+
+function RowHeader({ label }: { label: string }) {
+  return (
+    <th className="sticky left-0 z-10 border-b border-slate-100 bg-white px-4 py-2 text-left font-medium text-slate-700">
+      {label}
+    </th>
+  )
+}
+
+function InfoRow({
+  label,
+  cars,
+  render,
+}: {
+  label: string
+  cars: Car[]
+  render: (car: Car) => string
+}) {
+  return (
+    <tr>
+      <RowHeader label={label} />
+      {cars.map((car) => (
+        <td
+          key={car.id}
+          className="border-b border-l border-slate-100 px-4 py-2 text-slate-600"
+        >
+          {render(car)}
+        </td>
+      ))}
+    </tr>
+  )
+}

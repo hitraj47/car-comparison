@@ -3,21 +3,27 @@ import { Link, useParams } from 'react-router-dom'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db, updateComparison } from '../db'
 import CarPicker from '../components/CarPicker'
+import ComparisonTable from '../components/ComparisonTable'
+import type { Car } from '../types'
 
 export default function ComparisonDetailPage() {
   const { id } = useParams<{ id: string }>()
-  // Wrap in an object so we can tell "loading" (undefined) apart from
-  // "not found" ({ value: undefined }) — Dexie returns undefined for both.
-  const result = useLiveQuery(
-    async () => ({ value: id ? await db.comparisons.get(id) : undefined }),
-    [id],
-  )
+  const data = useLiveQuery(async () => {
+    const comparison = id ? await db.comparisons.get(id) : undefined
+    if (!comparison) return { comparison: undefined }
+    const fetched = await db.cars.bulkGet(comparison.carIds)
+    // Preserve column order; drop ids that no longer resolve to a car.
+    const cars = fetched.filter((c): c is Car => c != null)
+    const catalog = await db.proConItems.toArray()
+    return { comparison, cars, catalog }
+  }, [id])
+
   const [editingCars, setEditingCars] = useState(false)
 
-  if (result === undefined) {
+  if (data === undefined) {
     return <p className="text-slate-500">Loading…</p>
   }
-  const comparison = result.value
+  const { comparison } = data
   if (!comparison) {
     return (
       <div>
@@ -29,6 +35,8 @@ export default function ComparisonDetailPage() {
     )
   }
 
+  const cars = data.cars ?? []
+  const catalog = data.catalog ?? []
   const carCount = comparison.carIds.length
 
   return (
@@ -75,9 +83,7 @@ export default function ComparisonDetailPage() {
           )}
         </div>
       ) : (
-        <div className="rounded-lg border border-slate-200 bg-white p-6 text-slate-400">
-          Comparison table coming in the next step.
-        </div>
+        <ComparisonTable cars={cars} catalog={catalog} />
       )}
     </div>
   )

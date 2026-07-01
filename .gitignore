@@ -26,3 +26,5 @@ Thumbs.db
 # Vite / test cache
 .vite/
 coverage/
+
+plan.md

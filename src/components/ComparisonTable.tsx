@@ -4,6 +4,8 @@ import { BODY_STYLE_LABELS, DEFAULT_SCORING, FUEL_TYPE_LABELS } from '../types'
 import { carTitle, formatPrice, priceValue } from '../lib/format'
 import { updateCar } from '../db'
 import Modal from './Modal'
+import PhotoLightbox from './PhotoLightbox'
+import { usePhotoUrls } from '../hooks/usePhotoUrls'
 import {
   blendScores,
   metricScore,
@@ -132,6 +134,7 @@ export default function ComparisonTable({
   const hasSpecScore = specScores.some((s) => s != null)
 
   const [notesCar, setNotesCar] = useState<Car | null>(null)
+  const [photosCar, setPhotosCar] = useState<Car | null>(null)
 
   // Final Score = factual specs blended with normalized (subjective) pro/con.
   const finalScores = useMemo(() => {
@@ -159,6 +162,9 @@ export default function ComparisonTable({
                   className="min-w-40 border-b border-l border-slate-200 bg-slate-100 px-4 py-3 text-left align-top font-semibold text-slate-900"
                 >
                   {carTitle(car)}
+                  {car.photos && car.photos.length > 0 && (
+                    <PhotoThumb car={car} onOpen={() => setPhotosCar(car)} />
+                  )}
                   <button
                     type="button"
                     onClick={() => setNotesCar(car)}
@@ -290,7 +296,41 @@ export default function ComparisonTable({
       {notesCar && (
         <NotesModal car={notesCar} onClose={() => setNotesCar(null)} />
       )}
+
+      {photosCar && (
+        <PhotoLightbox car={photosCar} onClose={() => setPhotosCar(null)} />
+      )}
     </div>
+  )
+}
+
+function PhotoThumb({ car, onOpen }: { car: Car; onOpen: () => void }) {
+  const first = [...(car.photos ?? [])].sort(
+    (a, b) => a.sortOrder - b.sortOrder,
+  )[0]
+  const urls = usePhotoUrls(first ? [first] : [])
+  if (!first) return null
+  const count = car.photos?.length ?? 0
+  return (
+    <button
+      type="button"
+      onClick={onOpen}
+      className="mt-2 block"
+      aria-label={`View photos of ${carTitle(car)}`}
+    >
+      <span className="relative inline-block">
+        <img
+          src={urls[first.id]}
+          alt=""
+          className="h-16 w-24 rounded object-cover ring-1 ring-slate-200 hover:ring-slate-400"
+        />
+        {count > 1 && (
+          <span className="absolute bottom-1 right-1 rounded bg-slate-900/70 px-1.5 text-xs font-medium text-white">
+            {count}
+          </span>
+        )}
+      </span>
+    </button>
   )
 }
 

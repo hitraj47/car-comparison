@@ -36,6 +36,17 @@ export interface CarProConAssignment {
   polarity: ProConPolarity
 }
 
+// A photo stored per car. Blobs live natively in IndexedDB via Dexie.
+export interface CarPhoto {
+  id: string
+  blob: Blob
+  mimeType: string
+  caption?: string
+  sortOrder: number
+}
+
+export const MAX_PHOTOS_PER_CAR = 5
+
 export interface Car {
   id: string
   year: number
@@ -49,6 +60,7 @@ export interface Car {
   fuelType: FuelType
   notes?: string
   proCons?: CarProConAssignment[]
+  photos?: CarPhoto[]
   createdAt: string
   updatedAt: string
 }
@@ -113,11 +125,26 @@ export const BODY_STYLE_LABELS: Record<BodyStyle, string> = {
 export const FUEL_TYPES = Object.keys(FUEL_TYPE_LABELS) as FuelType[]
 export const BODY_STYLES = Object.keys(BODY_STYLE_LABELS) as BodyStyle[]
 
+// --- Backup / import-export shapes -----------------------------------------
+// Photos hold base64 data (not Blobs) so the backup is plain JSON.
+
+export interface SerializedCarPhoto {
+  id: string
+  data: string // base64-encoded blob bytes
+  mimeType: string
+  caption?: string
+  sortOrder: number
+}
+
+export type SerializedCar = Omit<Car, 'photos'> & {
+  photos?: SerializedCarPhoto[]
+}
+
 // Shape of a full backup used by import/export.
 export interface BackupFile {
-  version: 1
+  version: 2
   exportedAt: string
-  cars: Car[]
+  cars: SerializedCar[]
   comparisons: Comparison[]
   proConItems: ProConItem[]
 }

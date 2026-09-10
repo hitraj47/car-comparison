@@ -1,9 +1,65 @@
 import { db } from '../db'
-import type { BackupFile, Car, Comparison, ProConItem } from '../types'
+import type {
+  BackupFile,
+  Car,
+  Comparison,
+  ProConItem,
+  SerializedCar,
+} from '../types'
 
-export const BACKUP_VERSION = 1 as const
+export const BACKUP_VERSION = 2 as const
 
-/** Gather the entire database into a backup object. */
+// --- Blob <-> base64 --------------------------------------------------------
+
+export async function blobToBase64(blob: Blob): Promise<string> {
+  const bytes = new Uint8Array(await blob.arrayBuffer())
+  let binary = ''
+  for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i])
+  return btoa(binary)
+}
+
+export function base64ToBlob(data: string, mimeType: string): Blob {
+  const binary = atob(data)
+  const bytes = new Uint8Array(binary.length)
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i)
+  return new Blob([bytes], { type: mimeType })
+}
+
+async function serializeCar(car: Car): Promise<SerializedCar> {
+  const { photos, ...rest } = car
+  const sc: SerializedCar = rest
+  if (photos && photos.length > 0) {
+    sc.photos = await Promise.all(
+      photos.map(async (p) => ({
+        id: p.id,
+        data: await blobToBase64(p.blob),
+        mimeType: p.mimeType,
+        caption: p.caption,
+        sortOrder: p.sortOrder,
+      })),
+    )
+  }
+  return sc
+}
+
+function deserializeCar(sc: SerializedCar): Car {
+  const { photos, ...rest } = sc
+  const car = rest as Car
+  if (photos && photos.length > 0) {
+    car.photos = photos.map((p) => ({
+      id: p.id,
+      blob: base64ToBlob(p.data, p.mimeType),
+      mimeType: p.mimeType,
+      caption: p.caption,
+      sortOrder: p.sortOrder,
+    }))
+  }
+  return car
+}
+
+// --- Export -----------------------------------------------------------------
+
+/** Gather the entire database into a backup object (photos as base64). */
 export async function serializeBackup(): Promise<BackupFile> {
   const [cars, comparisons, proConItems] = await Promise.all([
     db.cars.toArray(),
@@ -13,11 +69,13 @@ export async function serializeBackup(): Promise<BackupFile> {
   return {
     version: BACKUP_VERSION,
     exportedAt: new Date().toISOString(),
-    cars,
+    cars: await Promise.all(cars.map(serializeCar)),
     comparisons,
     proConItems,
   }
 }
+
+// --- Import -----------------------------------------------------------------
 
 /** Parse and validate untrusted JSON text into a BackupFile. Throws on error. */
 export function parseBackup(text: string): BackupFile {
@@ -31,9 +89,10 @@ export function parseBackup(text: string): BackupFile {
     throw new Error('Backup must be a JSON object.')
   }
   const obj = data as Record<string, unknown>
-  if (obj.version !== BACKUP_VERSION) {
+  // Accept v1 (no photos) and v2 (photos as base64) backups.
+  if (obj.version !== 1 && obj.version !== 2) {
     throw new Error(
-      `Unsupported backup version: ${String(obj.version)} (expected ${BACKUP_VERSION}).`,
+      `Unsupported backup version: ${String(obj.version)} (expected 1 or 2).`,
     )
   }
   const cars = requireArray(obj.cars, 'cars')
@@ -48,7 +107,7 @@ export function parseBackup(text: string): BackupFile {
   return {
     version: BACKUP_VERSION,
     exportedAt: typeof obj.exportedAt === 'string' ? obj.exportedAt : '',
-    cars: cars as Car[],
+    cars: cars as SerializedCar[],
     comparisons: comparisons as Comparison[],
     proConItems: proConItems as ProConItem[],
   }
@@ -117,13 +176,14 @@ function split(
 
 /** Merge the backup into the database by id (update existing, add new). */
 export async function applyImport(backup: BackupFile): Promise<void> {
+  const cars = backup.cars.map(deserializeCar)
   await db.transaction(
     'rw',
     db.cars,
     db.comparisons,
     db.proConItems,
     async () => {
-      await db.cars.bulkPut(backup.cars)
+      await db.cars.bulkPut(cars)
       await db.comparisons.bulkPut(backup.comparisons)
       await db.proConItems.bulkPut(backup.proConItems)
     },

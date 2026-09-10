@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import Modal from './Modal'
 import ProConEditor from './ProConEditor'
+import PhotoUploader from './PhotoUploader'
 import { createCar, updateCar, type CarInput } from '../db'
 import {
   BODY_STYLES,
@@ -9,6 +10,7 @@ import {
   FUEL_TYPE_LABELS,
   type BodyStyle,
   type Car,
+  type CarPhoto,
   type CarProConAssignment,
   type FuelType,
   type MpgStats,
@@ -89,6 +91,7 @@ export default function CarForm({ car, onClose, onSaved }: CarFormProps) {
   const [proCons, setProCons] = useState<CarProConAssignment[]>(
     car?.proCons ?? [],
   )
+  const [photos, setPhotos] = useState<CarPhoto[]>(car?.photos ?? [])
   const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
 
@@ -155,6 +158,7 @@ export default function CarForm({ car, onClose, onSaved }: CarFormProps) {
       cargo,
       notes: form.notes.trim() || undefined,
       proCons,
+      photos,
     }
   }
 
@@ -381,6 +385,14 @@ export default function CarForm({ car, onClose, onSaved }: CarFormProps) {
             Pros &amp; Cons
           </legend>
           <ProConEditor assignments={proCons} onChange={setProCons} />
+        </fieldset>
+
+        {/* Photos */}
+        <fieldset className="rounded-md border border-slate-200 p-4">
+          <legend className="px-1 text-sm font-semibold text-slate-700">
+            Photos
+          </legend>
+          <PhotoUploader photos={photos} onChange={setPhotos} />
         </fieldset>
 
         {/* Notes */}

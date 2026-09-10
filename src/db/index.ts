@@ -1,5 +1,6 @@
 import Dexie, { type EntityTable } from 'dexie'
 import type {
+  AttributeDef,
   Car,
   Comparison,
   ProConItem,
@@ -12,14 +13,22 @@ export class CarComparisonDB extends Dexie {
   cars!: EntityTable<Car, 'id'>
   comparisons!: EntityTable<Comparison, 'id'>
   proConItems!: EntityTable<ProConItem, 'id'>
+  attributeDefs!: EntityTable<AttributeDef, 'id'>
 
   constructor() {
     super('car-comparison')
+    // Only indexed fields are listed; other properties are stored as-is.
     this.version(1).stores({
-      // Only indexed fields are listed; other properties are stored as-is.
       cars: 'id, make, model, year, updatedAt',
       comparisons: 'id, name, updatedAt',
       proConItems: 'id, label, updatedAt',
+    })
+    // v2 adds the custom-attribute catalog.
+    this.version(2).stores({
+      cars: 'id, make, model, year, updatedAt',
+      comparisons: 'id, name, updatedAt',
+      proConItems: 'id, label, updatedAt',
+      attributeDefs: 'id, name, updatedAt',
     })
   }
 }
@@ -160,6 +169,39 @@ export async function findOrCreateProConItem(
     .first()
   if (existing) return existing
   return createProConItem(trimmed)
+}
+
+// --- Custom attribute catalog ----------------------------------------------
+
+export type AttributeDefInput = Omit<
+  AttributeDef,
+  'id' | 'createdAt' | 'updatedAt'
+>
+
+export async function createAttributeDef(
+  input: AttributeDefInput,
+): Promise<AttributeDef> {
+  const timestamp = now()
+  const def: AttributeDef = {
+    ...input,
+    name: input.name.trim(),
+    id: newId(),
+    createdAt: timestamp,
+    updatedAt: timestamp,
+  }
+  await db.attributeDefs.add(def)
+  return def
+}
+
+export async function updateAttributeDef(
+  id: string,
+  changes: Partial<AttributeDefInput>,
+): Promise<void> {
+  await db.attributeDefs.update(id, { ...changes, updatedAt: now() })
+}
+
+export function deleteAttributeDef(id: string): Promise<void> {
+  return db.attributeDefs.delete(id)
 }
 
 // Re-export the assignment type for convenience at call sites.

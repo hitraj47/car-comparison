@@ -17,7 +17,8 @@ export default function ComparisonDetailPage() {
     // Preserve column order; drop ids that no longer resolve to a car.
     const cars = fetched.filter((c): c is Car => c != null)
     const catalog = await db.proConItems.toArray()
-    return { comparison, cars, catalog }
+    const attributeDefs = await db.attributeDefs.toArray()
+    return { comparison, cars, catalog, attributeDefs }
   }, [id])
 
   const [editingCars, setEditingCars] = useState(false)
@@ -40,6 +41,7 @@ export default function ComparisonDetailPage() {
 
   const cars = data.cars ?? []
   const catalog = data.catalog ?? []
+  const attributeDefs = data.attributeDefs ?? []
   const carCount = comparison.carIds.length
   // Merge over defaults so older saved configs fill any new fields.
   const config = { ...DEFAULT_SCORING, ...comparison.scoring }
@@ -112,7 +114,12 @@ export default function ComparisonDetailPage() {
           )}
         </div>
       ) : (
-        <ComparisonTable cars={cars} catalog={catalog} config={config} />
+        <ComparisonTable
+          cars={cars}
+          catalog={catalog}
+          attributeDefs={attributeDefs}
+          config={config}
+        />
       )}
     </div>
   )

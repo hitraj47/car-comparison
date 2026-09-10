@@ -141,6 +141,52 @@ describe('specsScores', () => {
   })
 })
 
+describe('specsScores with custom attributes & exclusions', () => {
+  const base = {
+    year: 2024,
+    make: 'M',
+    bodyStyle: 'truck',
+    fuelType: 'gas',
+    price: { mode: 'static', amount: 40000 },
+    createdAt: '',
+    updatedAt: '',
+  } as const
+
+  const towing = {
+    id: 'tow',
+    name: 'Towing capacity',
+    unit: 'lb',
+    direction: 'higher',
+    meaningfulDiff: 1000,
+    createdAt: '',
+    updatedAt: '',
+  } as const
+
+  const cars: Car[] = [
+    { ...base, id: 'a', model: 'A', customAttrs: { tow: 5000 } },
+    { ...base, id: 'b', model: 'B', customAttrs: { tow: 4000 } },
+  ]
+
+  it('scores a custom attribute like a built-in fact', () => {
+    // Price equal (excluded as non-comparative); towing is the only category.
+    const scores = specsScores(cars, DEFAULT_SCORING, [towing])
+    expect(scores[0]).toBe(100) // best
+    expect(scores[1]).toBe(80) // 1000 lb = one meaningful step behind
+  })
+
+  it('honors a per-comparison meaningful-diff override', () => {
+    const cfg = { ...DEFAULT_SCORING, customDiffs: { tow: 500 } }
+    // Now 1000 lb = two steps behind → 60.
+    expect(specsScores(cars, cfg, [towing])[1]).toBe(60)
+  })
+
+  it('drops an excluded fact from the score', () => {
+    const cfg = { ...DEFAULT_SCORING, excludedFacts: ['tow'] }
+    // Towing excluded, price equal → nothing comparable.
+    expect(specsScores(cars, cfg, [towing])).toEqual([null, null])
+  })
+})
+
 describe('blendScores', () => {
   it('weights specs and pros/cons by the given percentage', () => {
     expect(blendScores(80, 40, 50)).toBe(60) // equal blend

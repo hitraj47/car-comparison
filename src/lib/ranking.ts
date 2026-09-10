@@ -1,4 +1,4 @@
-import type { Car, ScoringConfig } from '../types'
+import type { AttributeDef, Car, ScoringConfig } from '../types'
 import { priceValue } from './format'
 
 export type Direction = 'lower' | 'higher'
@@ -115,17 +115,32 @@ export function priceMeaningfulDiff(
   return Math.max(1, (config.pricePct / 100) * min)
 }
 
+// Fact keys used for include/exclude and per-fact configuration.
+export const FACT_PRICE = 'price'
+export const FACT_MPG = 'mpg'
+export const FACT_MPGE = 'mpge'
+export const FACT_CARGO_UP = 'cargoUp'
+export const FACT_CARGO_FOLDED = 'cargoFolded'
+
+/** Effective meaningful difference for a custom attribute in a comparison. */
+export function customDiff(def: AttributeDef, config: ScoringConfig): number {
+  return config.customDiffs?.[def.id] ?? def.meaningfulDiff
+}
+
 /**
- * Equal-weighted 0–100 Specs Score per car, averaging price, MPG, MPGe, and
- * cargo. Seats-up and seats-folded cargo use separate meaningful differences
- * but are averaged into a single cargo category so cargo isn't double-weighted.
+ * Equal-weighted 0–100 Specs Score per car, averaging price, MPG, MPGe, cargo,
+ * and any custom attributes. Seats-up and seats-folded cargo use separate
+ * meaningful differences but are averaged into a single cargo category so cargo
+ * isn't double-weighted. Facts listed in `config.excludedFacts` are skipped.
  * Each car is scored only on the comparative categories it has a value for —
  * missing data never penalizes. Returns null when nothing is comparable.
  */
 export function specsScores(
   cars: Car[],
   config: ScoringConfig,
+  attrDefs: AttributeDef[] = [],
 ): (number | null)[] {
+  const excluded = new Set(config.excludedFacts ?? [])
   const priceValues = cars.map((c) => priceValue(c.price))
   const mpgValues = cars.map((c) => mpgHeadline(c) ?? null)
   const mpgeValues = cars.map((c) => mpgeHeadline(c) ?? null)
@@ -137,26 +152,36 @@ export function specsScores(
 
   return cars.map((_, i) => {
     const categories: number[] = []
-    const add = (s: number | null) => {
-      if (s != null) categories.push(s)
+    const add = (key: string, s: number | null) => {
+      if (!excluded.has(key) && s != null) categories.push(s)
     }
 
-    add(metricScore(priceValues, i, 'lower', priceDiff))
-    add(metricScore(mpgValues, i, 'higher', config.mpgDiff))
-    add(metricScore(mpgeValues, i, 'higher', config.mpgeDiff))
+    add(FACT_PRICE, metricScore(priceValues, i, 'lower', priceDiff))
+    add(FACT_MPG, metricScore(mpgValues, i, 'higher', config.mpgDiff))
+    add(FACT_MPGE, metricScore(mpgeValues, i, 'higher', config.mpgeDiff))
 
-    // Cargo: one category, averaged from the up/folded sub-scores present.
+    // Cargo: one category, averaged from the non-excluded up/folded sub-scores.
     const cargoSubs: number[] = []
-    const up = metricScore(cargoUpValues, i, 'higher', config.cargoUpDiff)
-    const folded = metricScore(
-      cargoFoldedValues,
-      i,
-      'higher',
-      config.cargoFoldedDiff,
-    )
-    if (up != null) cargoSubs.push(up)
-    if (folded != null) cargoSubs.push(folded)
+    if (!excluded.has(FACT_CARGO_UP)) {
+      const up = metricScore(cargoUpValues, i, 'higher', config.cargoUpDiff)
+      if (up != null) cargoSubs.push(up)
+    }
+    if (!excluded.has(FACT_CARGO_FOLDED)) {
+      const folded = metricScore(
+        cargoFoldedValues,
+        i,
+        'higher',
+        config.cargoFoldedDiff,
+      )
+      if (folded != null) cargoSubs.push(folded)
+    }
     if (cargoSubs.length > 0) categories.push(mean(cargoSubs))
+
+    // Custom attributes, each its own equal-weighted category.
+    for (const def of attrDefs) {
+      const values = cars.map((c) => c.customAttrs?.[def.id] ?? null)
+      add(def.id, metricScore(values, i, def.direction, customDiff(def, config)))
+    }
 
     if (categories.length === 0) return null
     return Math.round(mean(categories))

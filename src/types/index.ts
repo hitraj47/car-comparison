@@ -60,7 +60,22 @@ export interface Car {
   fuelType: FuelType
   notes?: string
   proCons?: CarProConAssignment[]
+  customAttrs?: Record<string, number> // attributeId -> value
   photos?: CarPhoto[]
+  createdAt: string
+  updatedAt: string
+}
+
+export type AttrDirection = 'higher' | 'lower'
+
+// App-wide custom numeric attribute (e.g. "Towing capacity"), managed like the
+// pro/con catalog. Per-car values live in Car.customAttrs keyed by id.
+export interface AttributeDef {
+  id: string
+  name: string
+  unit?: string // e.g. "lb", "hp"
+  direction: AttrDirection // which way is better
+  meaningfulDiff: number // default meaningful difference
   createdAt: string
   updatedAt: string
 }
@@ -83,6 +98,8 @@ export interface ScoringConfig {
   cargoUpDiff: number // meaningful cargo gap, seats up (cu ft)
   cargoFoldedDiff: number // meaningful cargo gap, seats folded (cu ft)
   proConWeight: number // % weight of pros/cons in the Final Score (specs = rest)
+  customDiffs?: Record<string, number> // per-comparison meaningful-diff override per custom attribute
+  excludedFacts?: string[] // fact keys shown but left out of the Specs Score
 }
 
 export const DEFAULT_SCORING: ScoringConfig = {
@@ -147,4 +164,5 @@ export interface BackupFile {
   cars: SerializedCar[]
   comparisons: Comparison[]
   proConItems: ProConItem[]
+  attributeDefs?: AttributeDef[]
 }

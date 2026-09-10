@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import type { Car, ProConItem, ScoringConfig } from '../types'
+import type { AttributeDef, Car, ProConItem, ScoringConfig } from '../types'
 import { BODY_STYLE_LABELS, DEFAULT_SCORING, FUEL_TYPE_LABELS } from '../types'
 import { carTitle, formatPrice, priceValue } from '../lib/format'
 import { updateCar } from '../db'
@@ -8,6 +8,12 @@ import PhotoLightbox from './PhotoLightbox'
 import { usePhotoUrls } from '../hooks/usePhotoUrls'
 import {
   blendScores,
+  customDiff,
+  FACT_CARGO_FOLDED,
+  FACT_CARGO_UP,
+  FACT_MPG,
+  FACT_MPGE,
+  FACT_PRICE,
   metricScore,
   priceMeaningfulDiff,
   proximityCellClass,
@@ -25,11 +31,13 @@ import {
 interface ComparisonTableProps {
   cars: Car[]
   catalog: ProConItem[]
+  attributeDefs?: AttributeDef[]
   config?: ScoringConfig
 }
 
 // A numeric row: extracts one value per car, colors by proximity to the best.
 interface NumericRow {
+  factKey: string
   label: string
   direction: Direction
   meaningfulDiff: number
@@ -46,6 +54,7 @@ const dash = '—'
 export default function ComparisonTable({
   cars,
   catalog,
+  attributeDefs = [],
   config = DEFAULT_SCORING,
 }: ComparisonTableProps) {
   const catalogById = useMemo(() => {
@@ -57,6 +66,7 @@ export default function ComparisonTable({
   const numericRows = useMemo<NumericRow[]>(() => {
     const rows: NumericRow[] = [
       {
+        factKey: FACT_PRICE,
         label: 'Price',
         direction: 'lower',
         meaningfulDiff: priceMeaningfulDiff(cars, config),
@@ -73,6 +83,7 @@ export default function ComparisonTable({
     for (const [label, key] of mpgFields) {
       if (cars.some((c) => c.mpg?.[key] != null)) {
         rows.push({
+          factKey: FACT_MPG,
           label,
           direction: 'higher',
           meaningfulDiff: config.mpgDiff,
@@ -90,6 +101,7 @@ export default function ComparisonTable({
     for (const [label, key] of mpgeFields) {
       if (cars.some((c) => c.mpge?.[key] != null)) {
         rows.push({
+          factKey: FACT_MPGE,
           label,
           direction: 'higher',
           meaningfulDiff: config.mpgeDiff,
@@ -101,6 +113,7 @@ export default function ComparisonTable({
 
     if (cars.some((c) => c.cargo?.seatsUpCuFt != null)) {
       rows.push({
+        factKey: FACT_CARGO_UP,
         label: 'Cargo — seats up (cu ft)',
         direction: 'higher',
         meaningfulDiff: config.cargoUpDiff,
@@ -110,6 +123,7 @@ export default function ComparisonTable({
     }
     if (cars.some((c) => c.cargo?.seatsFoldedCuFt != null)) {
       rows.push({
+        factKey: FACT_CARGO_FOLDED,
         label: 'Cargo — seats folded (cu ft)',
         direction: 'higher',
         meaningfulDiff: config.cargoFoldedDiff,
@@ -117,8 +131,23 @@ export default function ComparisonTable({
         display: (c) => numOrDash(c.cargo?.seatsFoldedCuFt),
       })
     }
+
+    // Custom attributes: one row each, when any car has a value.
+    for (const def of attributeDefs) {
+      if (cars.some((c) => c.customAttrs?.[def.id] != null)) {
+        const unit = def.unit ? ` (${def.unit})` : ''
+        rows.push({
+          factKey: def.id,
+          label: `${def.name}${unit}`,
+          direction: def.direction,
+          meaningfulDiff: customDiff(def, config),
+          value: (c) => c.customAttrs?.[def.id],
+          display: (c) => numOrDash(c.customAttrs?.[def.id]),
+        })
+      }
+    }
     return rows
-  }, [cars, config])
+  }, [cars, config, attributeDefs])
 
   const proConItemIds = useMemo(
     () => relevantItemIds(cars, catalogById),
@@ -130,7 +159,10 @@ export default function ComparisonTable({
     [cars, catalogById],
   )
 
-  const specScores = useMemo(() => specsScores(cars, config), [cars, config])
+  const specScores = useMemo(
+    () => specsScores(cars, config, attributeDefs),
+    [cars, config, attributeDefs],
+  )
   const hasSpecScore = specScores.some((s) => s != null)
 
   const [notesCar, setNotesCar] = useState<Car | null>(null)

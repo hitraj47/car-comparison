@@ -2,6 +2,7 @@ import { useState } from 'react'
 import Modal from './Modal'
 import ProConEditor from './ProConEditor'
 import PhotoUploader from './PhotoUploader'
+import CustomAttrsEditor from './CustomAttrsEditor'
 import { createCar, updateCar, type CarInput } from '../db'
 import {
   BODY_STYLES,
@@ -92,6 +93,13 @@ export default function CarForm({ car, onClose, onSaved }: CarFormProps) {
     car?.proCons ?? [],
   )
   const [photos, setPhotos] = useState<CarPhoto[]>(car?.photos ?? [])
+  const [customAttrs, setCustomAttrs] = useState<Record<string, string>>(() => {
+    const out: Record<string, string> = {}
+    if (car?.customAttrs) {
+      for (const [k, v] of Object.entries(car.customAttrs)) out[k] = String(v)
+    }
+    return out
+  })
   const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
 
@@ -144,6 +152,12 @@ export default function CarForm({ car, onClose, onSaved }: CarFormProps) {
         ? { seatsUpCuFt: cargoUp, seatsFoldedCuFt: cargoFolded }
         : undefined
 
+    const customAttrsOut: Record<string, number> = {}
+    for (const [k, v] of Object.entries(customAttrs)) {
+      const n = parseNum(v)
+      if (n != null) customAttrsOut[k] = n
+    }
+
     return {
       year,
       make: form.make.trim(),
@@ -159,6 +173,8 @@ export default function CarForm({ car, onClose, onSaved }: CarFormProps) {
       notes: form.notes.trim() || undefined,
       proCons,
       photos,
+      customAttrs:
+        Object.keys(customAttrsOut).length > 0 ? customAttrsOut : undefined,
     }
   }
 
@@ -385,6 +401,14 @@ export default function CarForm({ car, onClose, onSaved }: CarFormProps) {
             Pros &amp; Cons
           </legend>
           <ProConEditor assignments={proCons} onChange={setProCons} />
+        </fieldset>
+
+        {/* Custom attributes */}
+        <fieldset className="rounded-md border border-slate-200 p-4">
+          <legend className="px-1 text-sm font-semibold text-slate-700">
+            Custom attributes
+          </legend>
+          <CustomAttrsEditor values={customAttrs} onChange={setCustomAttrs} />
         </fieldset>
 
         {/* Photos */}

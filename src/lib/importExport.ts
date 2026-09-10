@@ -1,5 +1,6 @@
 import { db } from '../db'
 import type {
+  AttributeDef,
   BackupFile,
   Car,
   Comparison,
@@ -61,10 +62,11 @@ function deserializeCar(sc: SerializedCar): Car {
 
 /** Gather the entire database into a backup object (photos as base64). */
 export async function serializeBackup(): Promise<BackupFile> {
-  const [cars, comparisons, proConItems] = await Promise.all([
+  const [cars, comparisons, proConItems, attributeDefs] = await Promise.all([
     db.cars.toArray(),
     db.comparisons.toArray(),
     db.proConItems.toArray(),
+    db.attributeDefs.toArray(),
   ])
   return {
     version: BACKUP_VERSION,
@@ -72,6 +74,7 @@ export async function serializeBackup(): Promise<BackupFile> {
     cars: await Promise.all(cars.map(serializeCar)),
     comparisons,
     proConItems,
+    attributeDefs,
   }
 }
 
@@ -98,11 +101,17 @@ export function parseBackup(text: string): BackupFile {
   const cars = requireArray(obj.cars, 'cars')
   const comparisons = requireArray(obj.comparisons, 'comparisons')
   const proConItems = requireArray(obj.proConItems, 'proConItems')
+  // attributeDefs is optional (absent in v1 and early-v2 backups).
+  const attributeDefs =
+    obj.attributeDefs === undefined
+      ? []
+      : requireArray(obj.attributeDefs, 'attributeDefs')
 
   // Light structural checks — every record needs an id string.
   requireIds(cars, 'cars')
   requireIds(comparisons, 'comparisons')
   requireIds(proConItems, 'proConItems')
+  requireIds(attributeDefs, 'attributeDefs')
 
   return {
     version: BACKUP_VERSION,
@@ -110,6 +119,7 @@ export function parseBackup(text: string): BackupFile {
     cars: cars as SerializedCar[],
     comparisons: comparisons as Comparison[],
     proConItems: proConItems as ProConItem[],
+    attributeDefs: attributeDefs as AttributeDef[],
   }
 }
 
@@ -136,21 +146,24 @@ export interface ImportSummary {
   cars: { added: number; updated: number }
   comparisons: { added: number; updated: number }
   proConItems: { added: number; updated: number }
+  attributeDefs: { added: number; updated: number }
 }
 
 /** Count how many records the import would add vs. update (merge by id). */
 export async function summarizeImport(
   backup: BackupFile,
 ): Promise<ImportSummary> {
-  const [carIds, compIds, itemIds] = await Promise.all([
+  const [carIds, compIds, itemIds, attrIds] = await Promise.all([
     existingIds(db.cars),
     existingIds(db.comparisons),
     existingIds(db.proConItems),
+    existingIds(db.attributeDefs),
   ])
   return {
     cars: split(backup.cars, carIds),
     comparisons: split(backup.comparisons, compIds),
     proConItems: split(backup.proConItems, itemIds),
+    attributeDefs: split(backup.attributeDefs ?? [], attrIds),
   }
 }
 
@@ -182,10 +195,14 @@ export async function applyImport(backup: BackupFile): Promise<void> {
     db.cars,
     db.comparisons,
     db.proConItems,
+    db.attributeDefs,
     async () => {
       await db.cars.bulkPut(cars)
       await db.comparisons.bulkPut(backup.comparisons)
       await db.proConItems.bulkPut(backup.proConItems)
+      if (backup.attributeDefs?.length) {
+        await db.attributeDefs.bulkPut(backup.attributeDefs)
+      }
     },
   )
 }

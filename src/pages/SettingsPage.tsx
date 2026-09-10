@@ -55,13 +55,10 @@ export default function SettingsPage() {
     try {
       await applyImport(pending.backup)
       const { summary } = pending
-      const total =
-        summary.cars.added +
-        summary.cars.updated +
-        summary.comparisons.added +
-        summary.comparisons.updated +
-        summary.proConItems.added +
-        summary.proConItems.updated
+      const total = Object.values(summary).reduce(
+        (sum, s) => sum + s.added + s.updated,
+        0,
+      )
       setMessage(`Import complete — ${total} records merged.`)
       setPending(null)
     } catch (err) {
@@ -164,6 +161,10 @@ export default function SettingsPage() {
             <SummaryLine
               label="Pro/con items"
               stat={pending.summary.proConItems}
+            />
+            <SummaryLine
+              label="Custom attributes"
+              stat={pending.summary.attributeDefs}
             />
           </ul>
         </Modal>

@@ -1,0 +1,27 @@
+name: Deploy Tag to Production Branch
+
+on:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+' # Matches semver tags like v1.0.0, v1.2.2
+
+jobs:
+  sync-branch:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0 # Fetches full commit history for branch management
+          token: ${{ secrets.PRODUCTION_DEPLOY_TOKEN }}
+
+      - name: Sync and Push to Production Branch
+        run: |
+
+          # Force the production branch to match the exact tagged commit
+          # Replace 'production' with your preferred branch name observed by Vercel
+          git checkout -B production ${{ github.ref_name }}
+          
+          # Force push to update the branch on GitHub
+          git push origin production --force

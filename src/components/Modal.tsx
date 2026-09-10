@@ -1,4 +1,5 @@
 import { useEffect, type ReactNode } from 'react'
+import { createPortal } from 'react-dom'
 
 interface ModalProps {
   title: string
@@ -24,7 +25,9 @@ export default function Modal({
     return () => document.removeEventListener('keydown', onKey)
   }, [onClose])
 
-  return (
+  // Rendered through a portal so a modal's content (e.g. its own <form>) is
+  // never nested inside a parent modal's <form>, which would misroute submits.
+  return createPortal(
     <div
       className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-slate-900/40 p-8"
       onMouseDown={onClose}
@@ -51,6 +54,7 @@ export default function Modal({
           </div>
         )}
       </div>
-    </div>
+    </div>,
+    document.body,
   )
 }

@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { polarityFor, proConScore, relevantItemIds } from './proConScoring'
+import {
+  countProConUsage,
+  polarityFor,
+  proConScore,
+  relevantItemIds,
+} from './proConScoring'
 import type { Car, ProConItem } from '../types'
 
 function item(id: string, label: string, weight: number): ProConItem {
@@ -83,5 +88,34 @@ describe('relevantItemIds', () => {
       car('c9', [{ itemId: 'a', polarity: 'con' }]),
     ]
     expect(relevantItemIds(cars, catalog)).toEqual(['a'])
+  })
+})
+
+describe('countProConUsage', () => {
+  it('counts how many cars reference each item (any polarity)', () => {
+    const cars = [
+      car('c1', [
+        { itemId: 'a', polarity: 'pro' },
+        { itemId: 'b', polarity: 'con' },
+      ]),
+      car('c2', [{ itemId: 'a', polarity: 'con' }]),
+      car('c3', []),
+    ]
+    const counts = countProConUsage(cars)
+    expect(counts.get('a')).toBe(2)
+    expect(counts.get('b')).toBe(1)
+    expect(counts.get('c')).toBeUndefined()
+  })
+
+  it('counts each car at most once per item', () => {
+    // Defensive: a car should never list the same item twice, but if it does
+    // it still counts as one car.
+    const cars = [
+      car('c1', [
+        { itemId: 'a', polarity: 'pro' },
+        { itemId: 'a', polarity: 'con' },
+      ]),
+    ]
+    expect(countProConUsage(cars).get('a')).toBe(1)
   })
 })

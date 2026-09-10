@@ -31,6 +31,23 @@ export function polarityCellClass(polarity: ProConPolarity | null): string {
 }
 
 /**
+ * How many cars reference each catalog item (as a pro or a con). Each car is
+ * counted once per item regardless of how many times it appears.
+ */
+export function countProConUsage(cars: Car[]): Map<string, number> {
+  const counts = new Map<string, number>()
+  for (const car of cars) {
+    const seen = new Set<string>()
+    for (const a of car.proCons ?? []) {
+      if (seen.has(a.itemId)) continue
+      seen.add(a.itemId)
+      counts.set(a.itemId, (counts.get(a.itemId) ?? 0) + 1)
+    }
+  }
+  return counts
+}
+
+/**
  * Catalog item ids referenced (as pro or con) by any car in the set,
  * ordered by catalog weight descending then label.
  */

@@ -5,6 +5,7 @@ import { carTitle, formatPrice, priceValue } from '../lib/format'
 import { updateCar } from '../db'
 import Modal from './Modal'
 import PhotoLightbox from './PhotoLightbox'
+import AddProConModal from './AddProConModal'
 import { usePhotoUrls } from '../hooks/usePhotoUrls'
 import {
   blendScores,
@@ -167,6 +168,7 @@ export default function ComparisonTable({
 
   const [notesCar, setNotesCar] = useState<Car | null>(null)
   const [photosCar, setPhotosCar] = useState<Car | null>(null)
+  const [proConCar, setProConCar] = useState<Car | null>(null)
 
   const excludedFacts = useMemo(
     () => new Set(config.excludedFacts ?? []),
@@ -209,6 +211,13 @@ export default function ComparisonTable({
                   >
                     {car.notes?.trim() ? '📝 Notes' : '＋ Add note'}
                   </button>
+                  <button
+                    type="button"
+                    onClick={() => setProConCar(car)}
+                    className="mt-1 block text-xs font-normal text-slate-500 underline hover:text-slate-800"
+                  >
+                    ＋ Pro/Con
+                  </button>
                 </th>
               ))}
             </tr>
@@ -229,20 +238,29 @@ export default function ComparisonTable({
             {/* Numeric colored rows */}
             {numericRows.map((row) => {
               const values = cars.map((c) => row.value(c) ?? null)
+              const isExcluded = excludedFacts.has(row.factKey)
               return (
                 <tr key={row.label}>
-                  <RowHeader label={row.label} />
+                  <RowHeader
+                    label={row.label}
+                    note={isExcluded ? 'not scored' : undefined}
+                  />
                   {cars.map((car, i) => {
-                    const tier = proximityTier(
-                      values,
-                      i,
-                      row.direction,
-                      row.meaningfulDiff,
-                    )
+                    // Excluded facts stay visible but greyed and uncolored.
+                    const cellClass = isExcluded
+                      ? 'text-slate-400'
+                      : proximityCellClass(
+                          proximityTier(
+                            values,
+                            i,
+                            row.direction,
+                            row.meaningfulDiff,
+                          ),
+                        )
                     return (
                       <td
                         key={car.id}
-                        className={`border-b border-l border-slate-100 px-4 py-2 ${proximityCellClass(tier)}`}
+                        className={`border-b border-l border-slate-100 px-4 py-2 ${cellClass}`}
                       >
                         {row.display(car)}
                       </td>
@@ -337,6 +355,10 @@ export default function ComparisonTable({
       {photosCar && (
         <PhotoLightbox car={photosCar} onClose={() => setPhotosCar(null)} />
       )}
+
+      {proConCar && (
+        <AddProConModal car={proConCar} onClose={() => setProConCar(null)} />
+      )}
     </div>
   )
 }
@@ -425,13 +447,20 @@ function numOrDash(v: number | null | undefined): string {
 function RowHeader({
   label,
   sublabel,
+  note,
 }: {
   label: string
   sublabel?: string
+  note?: string
 }) {
   return (
     <th className="sticky left-0 z-10 border-b border-slate-100 bg-white px-4 py-2 text-left font-medium text-slate-700">
       {label}
+      {note && (
+        <span className="ml-2 text-xs font-normal text-slate-400">
+          ({note})
+        </span>
+      )}
       {sublabel && (
         <span className="block text-xs font-normal text-slate-400">
           {sublabel}

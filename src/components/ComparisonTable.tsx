@@ -168,6 +168,11 @@ export default function ComparisonTable({
   const [notesCar, setNotesCar] = useState<Car | null>(null)
   const [photosCar, setPhotosCar] = useState<Car | null>(null)
 
+  const excludedFacts = useMemo(
+    () => new Set(config.excludedFacts ?? []),
+    [config.excludedFacts],
+  )
+
   // Final Score = factual specs blended with normalized (subjective) pro/con.
   const finalScores = useMemo(() => {
     const proCon100 = cars.map((_, i) =>

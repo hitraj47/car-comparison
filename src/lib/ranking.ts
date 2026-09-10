@@ -127,6 +127,37 @@ export function customDiff(def: AttributeDef, config: ScoringConfig): number {
   return config.customDiffs?.[def.id] ?? def.meaningfulDiff
 }
 
+export interface FactMeta {
+  key: string
+  label: string
+  def?: AttributeDef // present for custom attributes
+}
+
+const hasMpgStats = (s?: { city?: number; highway?: number; combined?: number }) =>
+  s != null && (s.city != null || s.highway != null || s.combined != null)
+
+/** Facts that actually have data among the given cars (built-in + custom). */
+export function listFacts(cars: Car[], attrDefs: AttributeDef[]): FactMeta[] {
+  const facts: FactMeta[] = [{ key: FACT_PRICE, label: 'Price' }]
+  if (cars.some((c) => hasMpgStats(c.mpg))) facts.push({ key: FACT_MPG, label: 'MPG' })
+  if (cars.some((c) => hasMpgStats(c.mpge)))
+    facts.push({ key: FACT_MPGE, label: 'MPGe' })
+  if (cars.some((c) => c.cargo?.seatsUpCuFt != null))
+    facts.push({ key: FACT_CARGO_UP, label: 'Cargo (seats up)' })
+  if (cars.some((c) => c.cargo?.seatsFoldedCuFt != null))
+    facts.push({ key: FACT_CARGO_FOLDED, label: 'Cargo (seats folded)' })
+  for (const def of attrDefs) {
+    if (cars.some((c) => c.customAttrs?.[def.id] != null)) {
+      facts.push({
+        key: def.id,
+        label: def.unit ? `${def.name} (${def.unit})` : def.name,
+        def,
+      })
+    }
+  }
+  return facts
+}
+
 /**
  * Equal-weighted 0–100 Specs Score per car, averaging price, MPG, MPGe, cargo,
  * and any custom attributes. Seats-up and seats-folded cargo use separate

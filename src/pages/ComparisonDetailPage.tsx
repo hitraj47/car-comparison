@@ -5,7 +5,7 @@ import { db, updateComparison } from '../db'
 import CarPicker from '../components/CarPicker'
 import ComparisonTable from '../components/ComparisonTable'
 import ScoringSettings from '../components/ScoringSettings'
-import { priceMeaningfulDiff } from '../lib/ranking'
+import { listFacts, priceMeaningfulDiff } from '../lib/ranking'
 import { DEFAULT_SCORING, type Car } from '../types'
 
 export default function ComparisonDetailPage() {
@@ -87,11 +87,12 @@ export default function ComparisonDetailPage() {
 
       {showScoring && carCount >= 2 && (
         <div className="mb-6 rounded-lg border border-slate-200 bg-white p-5">
-          <h3 className="mb-3 text-sm font-semibold text-slate-700">
-            Meaningful differences
+          <h3 className="mb-3 text-base font-semibold text-slate-900">
+            Scoring settings
           </h3>
           <ScoringSettings
             config={config}
+            facts={listFacts(cars, attributeDefs)}
             priceDiffDollars={priceMeaningfulDiff(cars, config)}
             onChange={(scoring) => updateComparison(comparison.id, { scoring })}
           />

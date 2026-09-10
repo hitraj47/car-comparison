@@ -203,6 +203,7 @@ export default function CarForm({ car, onClose, onSaved }: CarFormProps) {
     <Modal
       title={car ? 'Edit Car' : 'Add Car'}
       onClose={onClose}
+      dismissible={false}
       footer={
         <>
           <button

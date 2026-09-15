@@ -27,4 +27,6 @@ Thumbs.db
 .vite/
 coverage/
 
+# claude
 plan.md
+/.claude/settings.local.json

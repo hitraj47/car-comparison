@@ -55,7 +55,8 @@ export default function ScoringSettings({
           Facts included
         </h4>
         <p className="mb-2 text-sm text-slate-500">
-          Unchecked facts stay visible but don’t count toward the Specs Score.
+          Unchecked facts stay in the table but are greyed out and don’t count
+          toward the Specs Score. Applies to custom metrics too.
         </p>
         <div className="flex flex-wrap gap-x-6 gap-y-2">
           {facts.map((f) => (

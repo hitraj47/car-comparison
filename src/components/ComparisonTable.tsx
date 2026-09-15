@@ -240,13 +240,14 @@ export default function ComparisonTable({
               const values = cars.map((c) => row.value(c) ?? null)
               const isExcluded = excludedFacts.has(row.factKey)
               return (
-                <tr key={row.label}>
+                <tr key={row.label} className={isExcluded ? 'bg-slate-50' : undefined}>
                   <RowHeader
                     label={row.label}
                     note={isExcluded ? 'not scored' : undefined}
+                    muted={isExcluded}
                   />
                   {cars.map((car, i) => {
-                    // Excluded facts stay visible but greyed and uncolored.
+                    // Excluded facts stay visible but greyed out and uncolored.
                     const cellClass = isExcluded
                       ? 'text-slate-400'
                       : proximityCellClass(
@@ -448,13 +449,20 @@ function RowHeader({
   label,
   sublabel,
   note,
+  muted = false,
 }: {
   label: string
   sublabel?: string
   note?: string
+  muted?: boolean
 }) {
+  // An excluded ("not scored") row is greyed out as a whole: muted label text
+  // and a matching muted background on the sticky header cell.
+  const tone = muted ? 'bg-slate-50 text-slate-400' : 'bg-white text-slate-700'
   return (
-    <th className="sticky left-0 z-10 border-b border-slate-100 bg-white px-4 py-2 text-left font-medium text-slate-700">
+    <th
+      className={`sticky left-0 z-10 border-b border-slate-100 px-4 py-2 text-left font-medium ${tone}`}
+    >
       {label}
       {note && (
         <span className="ml-2 text-xs font-normal text-slate-400">
@@ -558,6 +566,10 @@ function Legend() {
           {it.label}
         </span>
       ))}
+      <span className="flex items-center gap-1.5">
+        <span className="inline-block h-3 w-4 rounded-sm bg-slate-50 ring-1 ring-inset ring-slate-200" />
+        <span className="text-slate-400">Greyed = excluded from scoring</span>
+      </span>
     </div>
   )
 }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { fetchedNotesSummary, fetchedToForm } from './formFill'
+import { fetchedToForm } from './formFill'
 import type { FetchedCarData } from './types'
 
 const base: FetchedCarData = {
@@ -43,30 +43,5 @@ describe('fetchedToForm', () => {
     })
     expect(patch.fuelType).toBe('electric')
     expect(patch.mpgeCombined).toBe('140')
-  })
-})
-
-describe('fetchedNotesSummary', () => {
-  it('summarizes source and engine specs', () => {
-    const summary = fetchedNotesSummary({
-      ...base,
-      specs: { horsepowerHp: 169, cylinders: 4, displacementL: 2 },
-    })
-    expect(summary).toContain('FuelEconomy.gov + NHTSA')
-    expect(summary).toContain('169 hp, 4-cyl, 2L')
-  })
-
-  it('does not list missing fields', () => {
-    const summary = fetchedNotesSummary({
-      ...base,
-      missing: ['price', 'cargo (seats folded)'],
-    })
-    expect(summary).not.toContain('Still needed')
-    expect(summary).not.toContain('price')
-  })
-
-  it('omits the engine line when there are no engine specs', () => {
-    const summary = fetchedNotesSummary({ ...base, source: 'fueleconomy' })
-    expect(summary).toBe('Auto-filled from FuelEconomy.gov.')
   })
 })

@@ -5,7 +5,7 @@ import PhotoUploader from './PhotoUploader'
 import CustomAttrsEditor from './CustomAttrsEditor'
 import CarLookup from './CarLookup'
 import { createCar, updateCar, type CarInput } from '../db'
-import { fetchedNotesSummary, fetchedToForm } from '../lib/carData/formFill'
+import { fetchedToForm } from '../lib/carData/formFill'
 import type { FetchedCarData } from '../lib/carData/types'
 import {
   BODY_STYLES,
@@ -109,16 +109,10 @@ export default function CarForm({ car, onClose, onSaved }: CarFormProps) {
   const set = <K extends keyof FormState>(key: K, value: FormState[K]) =>
     setForm((f) => ({ ...f, [key]: value }))
 
-  // Merge a drill-down lookup result into the form, appending a spec/missing
-  // summary to any notes the user has already typed.
+  // Merge a drill-down lookup result into the form. Notes are deliberately left
+  // untouched — that field is the user's own space.
   function applyFetched(data: FetchedCarData) {
-    const patch = fetchedToForm(data)
-    const summary = fetchedNotesSummary(data)
-    setForm((f) => ({
-      ...f,
-      ...patch,
-      notes: f.notes.trim() ? `${f.notes.trim()}\n\n${summary}` : summary,
-    }))
+    setForm((f) => ({ ...f, ...fetchedToForm(data) }))
     setError(null)
   }
 

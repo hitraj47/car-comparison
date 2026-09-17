@@ -1,10 +1,9 @@
 // Maps a compiled lookup result (CAR-13) onto the Add Car form fields (CAR-14).
 //
 // Pure and string-valued so it drops straight into the form's controlled
-// inputs, and so it can be unit-tested without rendering the form. Engine specs
-// that have no first-class field on `Car` (horsepower, cylinders, displacement)
-// and the list of fields the APIs couldn't determine are folded into a
-// human-readable notes summary the user can keep or clear.
+// inputs, and so it can be unit-tested without rendering the form. Data with no
+// first-class field on `Car` (engine specs) and fields the APIs couldn't
+// determine are simply dropped — the notes field is left for the user alone.
 
 import type { FetchedCarData } from './types'
 import type { BodyStyle, FuelType } from '../../types'
@@ -29,28 +28,6 @@ export interface CarFormPatch {
 }
 
 const str = (n?: number): string => (n == null ? '' : String(n))
-
-const SOURCE_LABELS: Record<FetchedCarData['source'], string> = {
-  'fueleconomy+nhtsa': 'FuelEconomy.gov + NHTSA',
-  fueleconomy: 'FuelEconomy.gov',
-}
-
-// A short, readable summary of the source and any engine specs, meant to be
-// appended to the notes textarea. Fields the APIs couldn't determine are left
-// out on purpose: what's available varies by trim and engine choice, so a
-// "still needed" list is noise rather than a reliable checklist.
-export function fetchedNotesSummary(data: FetchedCarData): string {
-  const lines: string[] = [`Auto-filled from ${SOURCE_LABELS[data.source]}.`]
-
-  const { horsepowerHp, cylinders, displacementL } = data.specs
-  const engine: string[] = []
-  if (horsepowerHp != null) engine.push(`${horsepowerHp} hp`)
-  if (cylinders != null) engine.push(`${cylinders}-cyl`)
-  if (displacementL != null) engine.push(`${displacementL}L`)
-  if (engine.length > 0) lines.push(`Engine: ${engine.join(', ')}.`)
-
-  return lines.join('\n')
-}
 
 export function fetchedToForm(data: FetchedCarData): CarFormPatch {
   return {

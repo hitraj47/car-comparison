@@ -32,7 +32,7 @@ export default function PhotoLightbox({ car, onClose }: PhotoLightboxProps) {
           <button
             type="button"
             onClick={() => go(-1)}
-            className="rounded-full px-3 py-2 text-lg text-slate-500 hover:bg-slate-100"
+            className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-full text-lg text-slate-500 hover:bg-slate-100"
             aria-label="Previous photo"
           >
             ‹
@@ -57,7 +57,7 @@ export default function PhotoLightbox({ car, onClose }: PhotoLightboxProps) {
           <button
             type="button"
             onClick={() => go(1)}
-            className="rounded-full px-3 py-2 text-lg text-slate-500 hover:bg-slate-100"
+            className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-full text-lg text-slate-500 hover:bg-slate-100"
             aria-label="Next photo"
           >
             ›

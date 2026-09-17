@@ -12,6 +12,9 @@ body,
 
 body {
   margin: 0;
+  /* Stop iOS Safari from auto-inflating text after an orientation change. */
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
   font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial,
     sans-serif;
   background-color: #f8fafc; /* slate-50 */

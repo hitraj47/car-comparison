@@ -9,7 +9,7 @@ import {
   fetchMakes,
   fetchModels,
   fetchYears,
-} from '../src/lib/carData/sources'
+} from '../src/lib/carData/sources.js'
 import {
   badRequest,
   MENU_CACHE_CONTROL,
@@ -17,7 +17,7 @@ import {
   serverError,
   type ApiRequest,
   type ApiResponse,
-} from './_shared'
+} from './_shared.js'
 
 export default async function handler(
   req: ApiRequest,

@@ -3,7 +3,10 @@ import Modal from './Modal'
 import ProConEditor from './ProConEditor'
 import PhotoUploader from './PhotoUploader'
 import CustomAttrsEditor from './CustomAttrsEditor'
+import CarLookup from './CarLookup'
 import { createCar, updateCar, type CarInput } from '../db'
+import { fetchedToForm } from '../lib/carData/formFill'
+import type { FetchedCarData } from '../lib/carData/types'
 import {
   BODY_STYLES,
   BODY_STYLE_LABELS,
@@ -105,6 +108,13 @@ export default function CarForm({ car, onClose, onSaved }: CarFormProps) {
 
   const set = <K extends keyof FormState>(key: K, value: FormState[K]) =>
     setForm((f) => ({ ...f, [key]: value }))
+
+  // Merge a drill-down lookup result into the form. Notes are deliberately left
+  // untouched — that field is the user's own space.
+  function applyFetched(data: FetchedCarData) {
+    setForm((f) => ({ ...f, ...fetchedToForm(data) }))
+    setError(null)
+  }
 
   const showMpge = form.fuelType === 'hybrid' || form.fuelType === 'electric'
 
@@ -229,6 +239,17 @@ export default function CarForm({ car, onClose, onSaved }: CarFormProps) {
           <div className="rounded-md bg-rose-50 px-3 py-2 text-sm text-rose-700">
             {error}
           </div>
+        )}
+
+        {/* Drill-down lookup — auto-fills the fields below. Add mode only, since
+            editing an existing car shouldn't overwrite curated values. */}
+        {!car && (
+          <fieldset className="rounded-md border border-slate-200 bg-slate-50 p-4">
+            <legend className="px-1 text-sm font-semibold text-slate-700">
+              Look up specs
+            </legend>
+            <CarLookup onFill={applyFetched} />
+          </fieldset>
         )}
 
         {/* Identity */}

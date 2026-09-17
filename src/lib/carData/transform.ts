@@ -4,8 +4,8 @@
 // isolation. The fetch layer (sources.ts) and the serverless handlers wire
 // these together with the real APIs and the KV cache.
 
-import type { BodyStyle, CargoCapacity, FuelType, MpgStats } from '../../types'
-import type { CarSpecs, FetchedCarData, MenuOption } from './types'
+import type { BodyStyle, CargoCapacity, FuelType, MpgStats } from '../../types/index.js'
+import type { CarSpecs, FetchedCarData, MenuOption } from './types.js'
 
 // FuelEconomy.gov returns every field as a string; "", "-1" and (for metrics)
 // "0" all stand in for "no data". We only read the string fields we need.

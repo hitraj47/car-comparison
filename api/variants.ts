@@ -4,7 +4,7 @@
 // FuelEconomy.gov. Each option's `value` is the FuelEconomy vehicle id, passed
 // on to /api/car. Edge-cached for a day.
 
-import { fetchVariants } from '../src/lib/carData/sources'
+import { fetchVariants } from '../src/lib/carData/sources.js'
 import {
   badRequest,
   MENU_CACHE_CONTROL,
@@ -12,7 +12,7 @@ import {
   serverError,
   type ApiRequest,
   type ApiResponse,
-} from './_shared'
+} from './_shared.js'
 
 export default async function handler(
   req: ApiRequest,

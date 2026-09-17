@@ -4,7 +4,7 @@
 // ends in a compiled set of specs merged from two free public APIs
 // (NHTSA vPIC + FuelEconomy.gov). CAR-14 builds the UI on top of these shapes.
 
-import type { BodyStyle, CargoCapacity, FuelType, MpgStats } from '../../types'
+import type { BodyStyle, CargoCapacity, FuelType, MpgStats } from '../../types/index.js'
 
 // A single choice in a cascading menu (year / make / variant). `value` is what
 // the next query needs; `label` is what the UI shows.

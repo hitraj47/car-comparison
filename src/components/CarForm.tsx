@@ -253,7 +253,7 @@ export default function CarForm({ car, onClose, onSaved }: CarFormProps) {
         )}
 
         {/* Identity */}
-        <div className="grid grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-4">
           <Field label="Year *">
             <input
               type="number"
@@ -280,7 +280,7 @@ export default function CarForm({ car, onClose, onSaved }: CarFormProps) {
           </Field>
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Field label="Body style">
             <select
               value={form.bodyStyle}
@@ -342,7 +342,7 @@ export default function CarForm({ car, onClose, onSaved }: CarFormProps) {
               />
             </Field>
           ) : (
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <Field label="Min ($)">
                 <input
                   type="number"
@@ -395,7 +395,7 @@ export default function CarForm({ car, onClose, onSaved }: CarFormProps) {
           <legend className="px-1 text-sm font-semibold text-slate-700">
             Cargo (cu ft)
           </legend>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <Field label="Seats up">
               <input
                 type="number"
@@ -493,8 +493,10 @@ function MpgRow({
   keys: [keyof FormState, keyof FormState, keyof FormState]
 }) {
   return (
-    <div className="grid grid-cols-4 items-end gap-4">
-      <span className="pb-2 text-xs font-medium text-slate-500">{label}</span>
+    <div className="grid grid-cols-3 items-end gap-4 sm:grid-cols-4">
+      <span className="col-span-3 pb-2 text-xs font-medium text-slate-500 sm:col-span-1">
+        {label}
+      </span>
       <Field label="City">
         <input
           type="number"

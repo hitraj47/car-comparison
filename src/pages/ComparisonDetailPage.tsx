@@ -120,6 +120,14 @@ export default function ComparisonDetailPage() {
           catalog={catalog}
           attributeDefs={attributeDefs}
           config={config}
+          onToggleFact={(factKey) => {
+            const excluded = new Set(config.excludedFacts ?? [])
+            if (excluded.has(factKey)) excluded.delete(factKey)
+            else excluded.add(factKey)
+            updateComparison(comparison.id, {
+              scoring: { ...config, excludedFacts: [...excluded] },
+            })
+          }}
         />
       )}
     </div>

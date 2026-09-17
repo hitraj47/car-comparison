@@ -31,13 +31,6 @@ export default function ScoringSettings({
   const set = (key: keyof ScoringConfig, value: number) =>
     onChange({ ...config, [key]: value })
 
-  function toggleFact(key: string) {
-    const next = new Set(excluded)
-    if (next.has(key)) next.delete(key)
-    else next.add(key)
-    onChange({ ...config, excludedFacts: [...next] })
-  }
-
   function setCustomDiff(id: string, value: number) {
     onChange({
       ...config,
@@ -49,38 +42,15 @@ export default function ScoringSettings({
 
   return (
     <div className="space-y-5">
-      {/* Which facts count */}
-      <section>
-        <h4 className="mb-1 text-sm font-semibold text-slate-700">
-          Facts included
-        </h4>
-        <p className="mb-2 text-sm text-slate-500">
-          Unchecked facts stay in the table but are greyed out and don’t count
-          toward the Specs Score. Applies to custom metrics too.
-        </p>
-        <div className="flex flex-wrap gap-x-6 gap-y-2">
-          {facts.map((f) => (
-            <label key={f.key} className="flex items-center gap-2 text-sm">
-              <input
-                type="checkbox"
-                checked={!excluded.has(f.key)}
-                onChange={() => toggleFact(f.key)}
-                className="accent-slate-700"
-              />
-              {f.label}
-            </label>
-          ))}
-        </div>
-      </section>
-
       {/* Meaningful differences (only for included facts) */}
-      <section className="border-t border-slate-200 pt-4">
+      <section>
         <h4 className="mb-1 text-sm font-semibold text-slate-700">
           Meaningful differences
         </h4>
         <p className="mb-3 text-sm text-slate-500">
           A value within one meaningful difference of the best still counts as
-          great. Larger = more forgiving.
+          great. Larger = more forgiving. Use each row’s toggle in the table to
+          include or exclude a fact from scoring.
         </p>
         <div className="space-y-3">
           {included.map((f) => {

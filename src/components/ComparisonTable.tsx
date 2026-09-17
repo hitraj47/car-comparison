@@ -188,17 +188,22 @@ export default function ComparisonTable({
 
   return (
     <div>
-      <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white">
+      <p className="mb-2 text-xs text-slate-400 md:hidden">
+        Swipe the table sideways to compare →
+      </p>
+      {/* Relative wrapper hosts the mobile right-edge scroll-hint gradient. */}
+      <div className="relative">
+        <div className="overflow-x-auto overscroll-x-contain rounded-lg border border-slate-200 bg-white [-webkit-overflow-scrolling:touch]">
         <table className="border-collapse text-sm">
           <thead>
             <tr>
-              <th className="sticky left-0 z-20 min-w-56 border-b border-slate-200 bg-slate-100 px-4 py-3 text-left font-medium text-slate-500">
+              <th className="sticky left-0 z-20 min-w-36 border-b border-slate-200 bg-slate-100 px-2.5 py-2 text-left font-medium text-slate-500 md:min-w-56 md:px-4 md:py-3">
                 Attribute
               </th>
               {cars.map((car) => (
                 <th
                   key={car.id}
-                  className="min-w-40 border-b border-l border-slate-200 bg-slate-100 px-4 py-3 text-left align-top font-semibold text-slate-900"
+                  className="min-w-32 border-b border-l border-slate-200 bg-slate-100 px-2.5 py-2 text-left align-top font-semibold text-slate-900 md:min-w-40 md:px-4 md:py-3"
                 >
                   {carTitle(car)}
                   {car.photos && car.photos.length > 0 && (
@@ -261,7 +266,7 @@ export default function ComparisonTable({
                     return (
                       <td
                         key={car.id}
-                        className={`border-b border-l border-slate-100 px-4 py-2 ${cellClass}`}
+                        className={`border-b border-l border-slate-100 px-2.5 py-2 md:px-4 ${cellClass}`}
                       >
                         {row.display(car)}
                       </td>
@@ -287,7 +292,7 @@ export default function ComparisonTable({
               <tr>
                 <td
                   colSpan={cars.length + 1}
-                  className="sticky left-0 border-y border-slate-200 bg-slate-50 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-slate-500"
+                  className="sticky left-0 border-y border-slate-200 bg-slate-50 px-2.5 py-2 md:px-4 text-xs font-semibold uppercase tracking-wide text-slate-500"
                 >
                   Pros &amp; Cons
                 </td>
@@ -297,7 +302,7 @@ export default function ComparisonTable({
               const item = catalogById.get(itemId)!
               return (
                 <tr key={itemId}>
-                  <th className="sticky left-0 z-10 border-b border-slate-100 bg-white px-4 py-2 text-left font-medium text-slate-700">
+                  <th className="sticky left-0 z-10 border-b border-slate-100 bg-white px-2.5 py-2 md:px-4 text-left font-medium text-slate-700">
                     {item.label}
                     <span className="ml-2 text-xs text-slate-400">
                       ★{item.weight}
@@ -308,7 +313,7 @@ export default function ComparisonTable({
                     return (
                       <td
                         key={car.id}
-                        className={`border-b border-l border-slate-100 px-4 py-2 ${polarityCellClass(polarity)}`}
+                        className={`border-b border-l border-slate-100 px-2.5 py-2 md:px-4 ${polarityCellClass(polarity)}`}
                       >
                         {polarity === 'pro'
                           ? '✓ Pro'
@@ -345,6 +350,12 @@ export default function ComparisonTable({
             )}
           </tbody>
         </table>
+        </div>
+        {/* Fades the right edge on mobile to signal horizontal scroll. */}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-y-0 right-0 w-6 rounded-r-lg bg-gradient-to-l from-slate-900/10 to-transparent md:hidden"
+        />
       </div>
 
       <Legend />
@@ -461,7 +472,7 @@ function RowHeader({
   const tone = muted ? 'bg-slate-50 text-slate-400' : 'bg-white text-slate-700'
   return (
     <th
-      className={`sticky left-0 z-10 border-b border-slate-100 px-4 py-2 text-left font-medium ${tone}`}
+      className={`sticky left-0 z-10 border-b border-slate-100 px-2.5 py-2 md:px-4 text-left font-medium ${tone}`}
     >
       {label}
       {note && (
@@ -493,7 +504,7 @@ function InfoRow({
       {cars.map((car) => (
         <td
           key={car.id}
-          className="border-b border-l border-slate-100 px-4 py-2 text-slate-600"
+          className="border-b border-l border-slate-100 px-2.5 py-2 md:px-4 text-slate-600"
         >
           {render(car)}
         </td>
@@ -522,7 +533,7 @@ function ScoreRow({
   return (
     <tr>
       <th
-        className={`sticky left-0 z-10 border-b border-slate-100 bg-white px-4 py-2 text-left font-semibold text-slate-900 ${topBorder}`}
+        className={`sticky left-0 z-10 border-b border-slate-100 bg-white px-2.5 py-2 md:px-4 text-left font-semibold text-slate-900 ${topBorder}`}
       >
         {label}
         {sublabel && (
@@ -536,7 +547,7 @@ function ScoreRow({
         return (
           <td
             key={car.id}
-            className={`border-b border-l border-slate-100 px-4 py-2 font-semibold ${size} ${topBorder} ${proximityCellClass(tier)}`}
+            className={`border-b border-l border-slate-100 px-2.5 py-2 md:px-4 font-semibold ${size} ${topBorder} ${proximityCellClass(tier)}`}
           >
             {scores[i] ?? dash}
           </td>

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { fetchedToForm } from './formFill'
+import { fetchedToForm, identityToForm } from './formFill'
 import type { FetchedCarData } from './types'
 
 const base: FetchedCarData = {
@@ -43,5 +43,16 @@ describe('fetchedToForm', () => {
     })
     expect(patch.fuelType).toBe('electric')
     expect(patch.mpgeCombined).toBe('140')
+  })
+})
+
+describe('identityToForm', () => {
+  it('maps only the year/make/model identity fields', () => {
+    const patch = identityToForm({
+      year: '2025',
+      make: 'Toyota',
+      model: 'Mirai',
+    })
+    expect(patch).toEqual({ year: '2025', make: 'Toyota', model: 'Mirai' })
   })
 })

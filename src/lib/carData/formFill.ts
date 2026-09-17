@@ -29,6 +29,22 @@ export interface CarFormPatch {
 
 const str = (n?: number): string => (n == null ? '' : String(n))
 
+// A drill-down where no trim/specs could be fetched (a model FuelEconomy doesn't
+// know, or a model whose variant list came back empty) still tells us the
+// identity the user picked. Filling just those fields beats sending them back to
+// a blank form (CAR-22).
+export function identityToForm(identity: {
+  year: string
+  make: string
+  model: string
+}): Pick<CarFormPatch, 'year' | 'make' | 'model'> {
+  return {
+    year: identity.year,
+    make: identity.make,
+    model: identity.model,
+  }
+}
+
 export function fetchedToForm(data: FetchedCarData): CarFormPatch {
   return {
     year: str(data.year),

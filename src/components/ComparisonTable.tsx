@@ -212,14 +212,14 @@ export default function ComparisonTable({
                   <button
                     type="button"
                     onClick={() => setNotesCar(car)}
-                    className="mt-1 block text-xs font-normal text-slate-500 underline hover:text-slate-800"
+                    className="flex min-h-11 items-center text-xs font-normal text-slate-500 underline hover:text-slate-800 md:mt-1 md:block md:min-h-0"
                   >
                     {car.notes?.trim() ? '📝 Notes' : '＋ Add note'}
                   </button>
                   <button
                     type="button"
                     onClick={() => setProConCar(car)}
-                    className="mt-1 block text-xs font-normal text-slate-500 underline hover:text-slate-800"
+                    className="flex min-h-11 items-center text-xs font-normal text-slate-500 underline hover:text-slate-800 md:mt-1 md:block md:min-h-0"
                   >
                     ＋ Pro/Con
                   </button>

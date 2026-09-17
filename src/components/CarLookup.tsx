@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
   getCarData,
   getMakes,
@@ -6,17 +6,23 @@ import {
   getVariants,
   getYears,
 } from '../lib/carData/client'
-import type {
-  FetchedCarData,
-  MenuOption,
-  ModelOption,
-} from '../lib/carData/types'
+import type { MenuOption, ModelOption } from '../lib/carData/types'
+import {
+  fetchedToForm,
+  identityToForm,
+  type CarFormPatch,
+} from '../lib/carData/formFill'
 
 interface CarLookupProps {
-  // Called with the compiled specs once a variant is looked up, so the parent
-  // form can auto-fill its fields. The user can still edit everything after.
-  onFill: (data: FetchedCarData) => void
+  // Called with a patch of form fields to auto-fill. Usually the full compiled
+  // specs from a variant lookup, but when no trim can be resolved it's just the
+  // year/make/model the user picked (CAR-22). The user can still edit anything.
+  onFill: (patch: Partial<CarFormPatch>) => void
 }
+
+// The outcome of the drill-down we surface to the user: full specs from a
+// variant, or just the identity fields when no trim was available.
+type Fill = { kind: 'specs' | 'identity'; label: string }
 
 // Cascading drill-down (year → make → model → variant) that queries the public
 // car APIs (CAR-13) and hands the compiled specs back to the Add Car form.
@@ -37,7 +43,13 @@ export default function CarLookup({ onFill }: CarLookupProps) {
 
   const [loading, setLoading] = useState<null | 'menu' | 'specs'>(null)
   const [error, setError] = useState<string | null>(null)
-  const [filledLabel, setFilledLabel] = useState<string | null>(null)
+  const [fill, setFill] = useState<Fill | null>(null)
+
+  // Keep the latest onFill in a ref so the drill-down effect can call it without
+  // listing it as a dependency — the effect must react to selection changes
+  // only, not to the parent re-rendering with a fresh callback.
+  const onFillRef = useRef(onFill)
+  onFillRef.current = onFill
 
   // Load the year menu once on mount.
   useEffect(() => {
@@ -61,7 +73,7 @@ export default function CarLookup({ onFill }: CarLookupProps) {
     setModels([])
     setVariant('')
     setVariants([])
-    setFilledLabel(null)
+    setFill(null)
     if (!year) return
     let active = true
     setError(null)
@@ -80,7 +92,7 @@ export default function CarLookup({ onFill }: CarLookupProps) {
     setModels([])
     setVariant('')
     setVariants([])
-    setFilledLabel(null)
+    setFill(null)
     if (!year || !make) return
     let active = true
     setError(null)
@@ -97,16 +109,30 @@ export default function CarLookup({ onFill }: CarLookupProps) {
   useEffect(() => {
     setVariant('')
     setVariants([])
-    setFilledLabel(null)
+    setFill(null)
     if (!year || !make || !model) return
-    // Models NHTSA knows but FuelEconomy doesn't have no trims/specs to fetch;
-    // the UI steers the user to manual entry instead.
-    if (models.find((m) => m.value === model)?.hasData === false) return
+    // Models NHTSA knows but FuelEconomy doesn't have no trims/specs to fetch.
+    // We can't enrich them, but we still know the identity — fill that in rather
+    // than sending the user to a blank form (CAR-22).
+    if (models.find((m) => m.value === model)?.hasData === false) {
+      onFillRef.current(identityToForm({ year, make, model }))
+      setFill({ kind: 'identity', label: `${year} ${make} ${model}` })
+      return
+    }
     let active = true
     setError(null)
     setLoading('menu')
     getVariants(year, make, model)
-      .then((data) => active && setVariants(data))
+      .then((data) => {
+        if (!active) return
+        setVariants(data)
+        // FuelEconomy knows the model but returned no trims: fall back to filling
+        // the identity fields so the lookup still saves the user some typing.
+        if (data.length === 0) {
+          onFillRef.current(identityToForm({ year, make, model }))
+          setFill({ kind: 'identity', label: `${year} ${make} ${model}` })
+        }
+      })
       .catch((e) => active && setError(message(e)))
       .finally(() => active && setLoading(null))
     return () => {
@@ -119,7 +145,7 @@ export default function CarLookup({ onFill }: CarLookupProps) {
 
   async function handleVariant(vehicleId: string) {
     setVariant(vehicleId)
-    setFilledLabel(null)
+    setFill(null)
     if (!vehicleId) return
     const label = variants.find((v) => v.value === vehicleId)?.label ?? ''
     setError(null)
@@ -132,8 +158,8 @@ export default function CarLookup({ onFill }: CarLookupProps) {
         model,
         variant: label,
       })
-      onFill(data)
-      setFilledLabel(`${data.year} ${data.make} ${data.model}`)
+      onFill(fetchedToForm(data))
+      setFill({ kind: 'specs', label: `${data.year} ${data.make} ${data.model}` })
     } catch (e) {
       setError(message(e))
     } finally {
@@ -185,16 +211,16 @@ export default function CarLookup({ onFill }: CarLookupProps) {
         </p>
       )}
 
-      {noSpecs && !loading && (
-        <p className="text-xs text-amber-700">
-          No spec data is available for this model — please enter its details
-          manually below.
+      {fill?.kind === 'identity' && !error && (
+        <p className="text-xs text-amber-700" role="status">
+          No trims were found for {fill.label}. Filled in the year, make and
+          model — add the remaining specs manually below.
         </p>
       )}
 
-      {filledLabel && !error && (
+      {fill?.kind === 'specs' && !error && (
         <p className="text-xs text-emerald-700" role="status">
-          Filled in specs for {filledLabel}. Review them below before saving.
+          Filled in specs for {fill.label}. Review them below before saving.
         </p>
       )}
 

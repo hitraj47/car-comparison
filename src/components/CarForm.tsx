@@ -5,8 +5,7 @@ import PhotoUploader from './PhotoUploader'
 import CustomAttrsEditor from './CustomAttrsEditor'
 import CarLookup from './CarLookup'
 import { createCar, updateCar, type CarInput } from '../db'
-import { fetchedToForm } from '../lib/carData/formFill'
-import type { FetchedCarData } from '../lib/carData/types'
+import type { CarFormPatch } from '../lib/carData/formFill'
 import {
   BODY_STYLES,
   BODY_STYLE_LABELS,
@@ -109,10 +108,11 @@ export default function CarForm({ car, onClose, onSaved }: CarFormProps) {
   const set = <K extends keyof FormState>(key: K, value: FormState[K]) =>
     setForm((f) => ({ ...f, [key]: value }))
 
-  // Merge a drill-down lookup result into the form. Notes are deliberately left
-  // untouched — that field is the user's own space.
-  function applyFetched(data: FetchedCarData) {
-    setForm((f) => ({ ...f, ...fetchedToForm(data) }))
+  // Merge a drill-down lookup patch into the form. The patch may be the full
+  // compiled specs or just the year/make/model when no trim was found (CAR-22).
+  // Notes are deliberately left untouched — that field is the user's own space.
+  function applyFetched(patch: Partial<CarFormPatch>) {
+    setForm((f) => ({ ...f, ...patch }))
     setError(null)
   }
 

@@ -85,7 +85,7 @@ export default function SettingsPage() {
         </div>
       )}
 
-      <div className="grid grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
         <section className="rounded-lg border border-slate-200 bg-white p-6">
           <h3 className="text-lg font-semibold text-slate-900">Export</h3>
           <p className="mt-1 text-sm text-slate-500">

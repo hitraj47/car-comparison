@@ -8,13 +8,13 @@
 // own implementation. Network/parse failures from the enrichment source are
 // swallowed so a lookup degrades to FuelEconomy-only rather than failing.
 
-import type { FetchedCarData, MenuOption, ModelOption } from './types'
+import type { FetchedCarData, MenuOption, ModelOption } from './types.js'
 import {
   mergeCarData,
   normalizeMenuItems,
   parseNhtsaModels,
   type FuelEconomyVehicle,
-} from './transform'
+} from './transform.js'
 
 export type FetchLike = (url: string, init?: RequestInit) => Promise<Response>
 

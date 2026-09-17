@@ -5,10 +5,10 @@
 // (car:<year>:<make>:<model>:<variant>). KV is optional — when `kv` is null the
 // external fetch runs every time, which is the local-dev / no-KV path.
 
-import { fetchCompiledCar, type FetchLike } from './sources'
-import { kvGet, kvSet, type KvConfig } from './kv'
-import { kvKey } from './transform'
-import type { FetchedCarData } from './types'
+import { fetchCompiledCar, type FetchLike } from './sources.js'
+import { kvGet, kvSet, type KvConfig } from './kv.js'
+import { kvKey } from './transform.js'
+import type { FetchedCarData } from './types.js'
 
 // Compiled variants change rarely; keep them a week.
 export const CAR_TTL_SECONDS = 60 * 60 * 24 * 7

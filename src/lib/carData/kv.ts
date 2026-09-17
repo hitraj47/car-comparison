@@ -6,7 +6,7 @@
 // browser-bundled code. The serverless handlers read the env and build the
 // config; when the env is absent, they pass `null` and caching is skipped.
 
-import type { FetchLike } from './sources'
+import type { FetchLike } from './sources.js'
 
 export interface KvConfig {
   url: string // KV_REST_API_URL

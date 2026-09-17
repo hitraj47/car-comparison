@@ -5,15 +5,15 @@
 // horsepower. Results are cached in Vercel KV under a stable key so repeat
 // visitors hit Redis in milliseconds; the response header reports the hit/miss.
 
-import { resolveCar } from '../src/lib/carData/cache'
-import { kvConfigFromEnv } from '../src/lib/carData/kv'
+import { resolveCar } from '../src/lib/carData/cache.js'
+import { kvConfigFromEnv } from '../src/lib/carData/kv.js'
 import {
   badRequest,
   param,
   serverError,
   type ApiRequest,
   type ApiResponse,
-} from './_shared'
+} from './_shared.js'
 
 export default async function handler(
   req: ApiRequest,

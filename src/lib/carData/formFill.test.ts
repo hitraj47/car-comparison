@@ -47,18 +47,25 @@ describe('fetchedToForm', () => {
 })
 
 describe('fetchedNotesSummary', () => {
-  it('summarizes engine specs and missing fields', () => {
+  it('summarizes source and engine specs', () => {
     const summary = fetchedNotesSummary({
       ...base,
       specs: { horsepowerHp: 169, cylinders: 4, displacementL: 2 },
-      missing: ['price', 'cargo (seats folded)'],
     })
     expect(summary).toContain('FuelEconomy.gov + NHTSA')
     expect(summary).toContain('169 hp, 4-cyl, 2L')
-    expect(summary).toContain('Still needed: price, cargo (seats folded)')
   })
 
-  it('omits the engine and missing lines when there is nothing to report', () => {
+  it('does not list missing fields', () => {
+    const summary = fetchedNotesSummary({
+      ...base,
+      missing: ['price', 'cargo (seats folded)'],
+    })
+    expect(summary).not.toContain('Still needed')
+    expect(summary).not.toContain('price')
+  })
+
+  it('omits the engine line when there are no engine specs', () => {
     const summary = fetchedNotesSummary({ ...base, source: 'fueleconomy' })
     expect(summary).toBe('Auto-filled from FuelEconomy.gov.')
   })

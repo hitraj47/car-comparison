@@ -35,9 +35,10 @@ const SOURCE_LABELS: Record<FetchedCarData['source'], string> = {
   fueleconomy: 'FuelEconomy.gov',
 }
 
-// A short, readable summary of the engine specs and still-missing fields, meant
-// to be appended to the notes textarea. Returns '' when there is nothing worth
-// noting so the caller can skip appending.
+// A short, readable summary of the source and any engine specs, meant to be
+// appended to the notes textarea. Fields the APIs couldn't determine are left
+// out on purpose: what's available varies by trim and engine choice, so a
+// "still needed" list is noise rather than a reliable checklist.
 export function fetchedNotesSummary(data: FetchedCarData): string {
   const lines: string[] = [`Auto-filled from ${SOURCE_LABELS[data.source]}.`]
 
@@ -47,10 +48,6 @@ export function fetchedNotesSummary(data: FetchedCarData): string {
   if (cylinders != null) engine.push(`${cylinders}-cyl`)
   if (displacementL != null) engine.push(`${displacementL}L`)
   if (engine.length > 0) lines.push(`Engine: ${engine.join(', ')}.`)
-
-  if (data.missing.length > 0) {
-    lines.push(`Still needed: ${data.missing.join(', ')}.`)
-  }
 
   return lines.join('\n')
 }

@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useState, type ReactNode } from 'react'
 import type { AttributeDef, Car, ProConItem, ScoringConfig } from '../types'
 import { BODY_STYLE_LABELS, DEFAULT_SCORING, FUEL_TYPE_LABELS } from '../types'
 import { carTitle, formatPrice, priceValue } from '../lib/format'
@@ -34,6 +34,9 @@ interface ComparisonTableProps {
   catalog: ProConItem[]
   attributeDefs?: AttributeDef[]
   config?: ScoringConfig
+  // Toggle a fact in/out of scoring. When provided, each numeric row shows a
+  // switch; when omitted the rows are read-only (state still comes from config).
+  onToggleFact?: (factKey: string) => void
 }
 
 // A numeric row: extracts one value per car, colors by proximity to the best.
@@ -57,6 +60,7 @@ export default function ComparisonTable({
   catalog,
   attributeDefs = [],
   config = DEFAULT_SCORING,
+  onToggleFact,
 }: ComparisonTableProps) {
   const catalogById = useMemo(() => {
     const m = new Map<string, ProConItem>()
@@ -250,6 +254,15 @@ export default function ComparisonTable({
                     label={row.label}
                     note={isExcluded ? 'not scored' : undefined}
                     muted={isExcluded}
+                    toggle={
+                      onToggleFact && (
+                        <ScoreToggle
+                          included={!isExcluded}
+                          label={row.label}
+                          onToggle={() => onToggleFact(row.factKey)}
+                        />
+                      )
+                    }
                   />
                   {cars.map((car, i) => {
                     // Excluded facts stay visible but greyed out and uncolored.
@@ -461,11 +474,13 @@ function RowHeader({
   sublabel,
   note,
   muted = false,
+  toggle,
 }: {
   label: string
   sublabel?: string
   note?: string
   muted?: boolean
+  toggle?: ReactNode
 }) {
   // An excluded ("not scored") row is greyed out as a whole: muted label text
   // and a matching muted background on the sticky header cell.
@@ -474,18 +489,59 @@ function RowHeader({
     <th
       className={`sticky left-0 z-10 border-b border-slate-100 px-2.5 py-2 md:px-4 text-left font-medium ${tone}`}
     >
-      {label}
-      {note && (
-        <span className="ml-2 text-xs font-normal text-slate-400">
-          ({note})
+      <div className="flex items-center gap-2">
+        {toggle}
+        <span>
+          {label}
+          {note && (
+            <span className="ml-2 text-xs font-normal text-slate-400">
+              ({note})
+            </span>
+          )}
+          {sublabel && (
+            <span className="block text-xs font-normal text-slate-400">
+              {sublabel}
+            </span>
+          )}
         </span>
-      )}
-      {sublabel && (
-        <span className="block text-xs font-normal text-slate-400">
-          {sublabel}
-        </span>
-      )}
+      </div>
     </th>
+  )
+}
+
+// Per-row switch that includes/excludes a fact from scoring. Sized with a
+// 44px touch target for mobile while keeping a compact track visual.
+function ScoreToggle({
+  included,
+  label,
+  onToggle,
+}: {
+  included: boolean
+  label: string
+  onToggle: () => void
+}) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={included}
+      aria-label={`${included ? 'Exclude' : 'Include'} ${label} in scoring`}
+      title={included ? 'Scored — tap to exclude' : 'Not scored — tap to include'}
+      onClick={onToggle}
+      className="inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center md:min-h-0 md:min-w-0"
+    >
+      <span
+        className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
+          included ? 'bg-emerald-500' : 'bg-slate-300'
+        }`}
+      >
+        <span
+          className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${
+            included ? 'translate-x-4' : 'translate-x-0.5'
+          }`}
+        />
+      </span>
+    </button>
   )
 }
 
@@ -579,7 +635,9 @@ function Legend() {
       ))}
       <span className="flex items-center gap-1.5">
         <span className="inline-block h-3 w-4 rounded-sm bg-slate-50 ring-1 ring-inset ring-slate-200" />
-        <span className="text-slate-400">Greyed = excluded from scoring</span>
+        <span className="text-slate-400">
+          Greyed = excluded from scoring — use each row’s toggle to change it
+        </span>
       </span>
     </div>
   )

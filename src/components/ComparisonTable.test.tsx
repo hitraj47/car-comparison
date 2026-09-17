@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'vitest'
-import { render, screen, within } from '@testing-library/react'
+import { describe, expect, it, vi } from 'vitest'
+import { fireEvent, render, screen, within } from '@testing-library/react'
 import ComparisonTable from './ComparisonTable'
 import { FACT_MPG } from '../lib/ranking'
 import { DEFAULT_SCORING } from '../types'
@@ -92,5 +92,63 @@ describe('ComparisonTable — include/exclude from scoring', () => {
     for (const cell of valueCells('Towing (lb)')) {
       expect(cell.className).toContain('text-slate-400')
     }
+  })
+})
+
+// The row switch (walked up from its label) for a given attribute row.
+function rowSwitch(label: string): HTMLElement {
+  const row = rowHeader(label).closest('tr') as HTMLElement
+  return within(row).getByRole('switch')
+}
+
+describe('ComparisonTable — per-row scoring toggle', () => {
+  it('shows a switch per numeric row that reflects included state', () => {
+    render(
+      <ComparisonTable
+        cars={cars}
+        catalog={[]}
+        attributeDefs={[towing]}
+        config={DEFAULT_SCORING}
+        onToggleFact={() => {}}
+      />,
+    )
+    expect(rowSwitch('MPG — Combined')).toHaveAttribute('aria-checked', 'true')
+    expect(rowSwitch('Price')).toHaveAttribute('aria-checked', 'true')
+  })
+
+  it('reflects an excluded fact as an off switch', () => {
+    const config: ScoringConfig = { ...DEFAULT_SCORING, excludedFacts: [FACT_MPG] }
+    render(
+      <ComparisonTable
+        cars={cars}
+        catalog={[]}
+        attributeDefs={[towing]}
+        config={config}
+        onToggleFact={() => {}}
+      />,
+    )
+    expect(rowSwitch('MPG — Combined')).toHaveAttribute('aria-checked', 'false')
+  })
+
+  it('calls onToggleFact with the row fact key when clicked', () => {
+    const onToggleFact = vi.fn()
+    render(
+      <ComparisonTable
+        cars={cars}
+        catalog={[]}
+        attributeDefs={[towing]}
+        config={DEFAULT_SCORING}
+        onToggleFact={onToggleFact}
+      />,
+    )
+    fireEvent.click(rowSwitch('MPG — Combined'))
+    expect(onToggleFact).toHaveBeenCalledWith(FACT_MPG)
+  })
+
+  it('omits switches when no onToggleFact handler is given', () => {
+    render(
+      <ComparisonTable cars={cars} catalog={[]} attributeDefs={[towing]} config={DEFAULT_SCORING} />,
+    )
+    expect(screen.queryByRole('switch')).toBeNull()
   })
 })
